@@ -16,34 +16,91 @@
 #include <flir_spinnaker_ros2/flir_spinnaker_ros2.h>
 
 #include <image_transport/image_transport.hpp>
+#include <sensor_msgs/image_encodings.hpp>
+#include <sensor_msgs/fill_image.hpp>
 
 namespace flir_spinnaker_ros2
 {
 FlirSpinnakerROS2::FlirSpinnakerROS2(const std::shared_ptr<rclcpp::Node> & node)
 : node_(node) {}
 
-void FlirSpinnakerROS2::readParameters()
+
+FlirSpinnakerROS2::~FlirSpinnakerROS2()
 {
-  const std::vector<std::string> cameraGroups =
-    node_->declare_parameter<std::vector<std::string>>("camera_groups", std::vector<std::string>());
-  for (const auto & cg : cameraGroups) {
-    RCLCPP_INFO_STREAM(node_->get_logger(), "camera group: " << cg);
-    const std::vector<std::string> cameras = node_->declare_parameter<std::vector<std::string>>(
-      cg + "." + "cameras", std::vector<std::string>());
-    for (const auto & cam : cameras) {
-      RCLCPP_INFO_STREAM(node_->get_logger(), " camera " << cam << ":");
-    }
-  }
+  stop();
 }
 
-void FlirSpinnakerROS2::start()
+bool FlirSpinnakerROS2::stop()
 {
+  if (cameraRunning_ && driver_) {
+    return driver_->stopCamera();
+  }
+  return false;
+}
+
+void FlirSpinnakerROS2::readParameters()
+{
+  name_ = node_->declare_parameter<std::string>("name", "missing_camera_name");
+  serial_ = node_->declare_parameter<std::string>("serial_number", "missing_serial_number");
+  imageMsg_->header.frame_id = node_->declare_parameter<std::string>("frame_id", name_);
+  cameraInfoMsg_->header.frame_id = imageMsg_->header.frame_id;
+  RCLCPP_INFO_STREAM(node_->get_logger(), "camera name: " << name_ << " serial: " << serial_);
+}
+
+
+void FlirSpinnakerROS2::publishImage(const ImageConstPtr & im)
+{
+  imageMsg_->header.stamp = rclcpp::Time(im->time_);
+  cameraInfoMsg_->header.stamp = rclcpp::Time(im->time_);
+
+  const std::string encoding = sensor_msgs::image_encodings::BAYER_GBRG8;
+  // will make deep copy. Do we need to?
+  bool ret = sensor_msgs::fillImage(
+    *imageMsg_, encoding, im->height_,
+    im->width_, im->stride_,
+    im->data_);
+  if (!ret) {
+    RCLCPP_INFO_STREAM(node_->get_logger(), "camera name: " << name_ << " serial: " << serial_);
+  }
+  pub_.publish(imageMsg_, cameraInfoMsg_);
+}
+
+bool FlirSpinnakerROS2::start()
+{
+  infoManager_ = std::make_shared<camera_info_manager::CameraInfoManager>(node_.get());
+  cameraInfoMsg_ =
+    std::make_shared<sensor_msgs::msg::CameraInfo>(infoManager_->getCameraInfo());
+  imageMsg_ = std::make_shared<sensor_msgs::msg::Image>();
   readParameters();
   const rmw_qos_profile_t custom_qos = rmw_qos_profile_default;
   pub_ = image_transport::create_camera_publisher(node_.get(), "camera/image", custom_qos);
-  infoManager_ = std::make_shared<camera_info_manager::CameraInfoManager>(node_.get());
   driver_ = std::make_shared<flir_spinnaker_common::Driver>();
   RCLCPP_INFO_STREAM(
     node_->get_logger(), "using spinnaker library version: " + driver_->getLibraryVersion());
+  const auto camList = driver_->getSerialNumbers();
+  if (camList.empty()) {
+    RCLCPP_WARN_STREAM(node_->get_logger(), "no cameras found!");
+  }
+  for (const auto cam: camList) {
+    if (cam == serial_) {
+      RCLCPP_INFO_STREAM(node_->get_logger(), "found matching camera serial number: " << cam);
+      flir_spinnaker_common::Driver::Callback cb = std::bind(
+        &FlirSpinnakerROS2::publishImage, this,
+        std::placeholders::_1);
+      cameraRunning_ = driver_->startCamera(cam, cb);
+      if (!cameraRunning_) {
+        RCLCPP_ERROR_STREAM(node_->get_logger(), "failed to start cam " << cam);
+      }
+    } else {
+      RCLCPP_INFO_STREAM(node_->get_logger(), "skipping camera with serial number: " << cam);
+    }
+  }
+  if (!cameraRunning_) {
+    RCLCPP_ERROR_STREAM(node_->get_logger(), "no camera found with serial number:" << serial_);
+    for (const auto cam: camList) {
+      RCLCPP_WARN_STREAM(node_->get_logger(), "found cam: " << cam);
+    }
+  }
+  return cameraRunning_;
 }
 }  // namespace flir_spinnaker_ros2
