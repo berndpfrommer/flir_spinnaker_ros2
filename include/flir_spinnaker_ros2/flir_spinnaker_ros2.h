@@ -18,6 +18,7 @@ class FlirSpinnakerROS2 {
   void start();
 
  private:
+  void readParameters();
   // ----- variables --
   std::shared_ptr<rclcpp::Node> node_;
   image_transport::CameraPublisher pub_;

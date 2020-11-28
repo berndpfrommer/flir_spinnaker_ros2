@@ -10,4 +10,4 @@ def generate_launch_description():
         Node(package='flir_spinnaker_ros2',
              namespace='flir',
              executable='flir_spinnaker_ros2',
-             name='camera_node')])
+             name='spinnaker_node')])
