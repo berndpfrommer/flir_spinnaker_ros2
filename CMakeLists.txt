@@ -27,16 +27,16 @@ set(ROS2_DEPENDENCIES
   "camera_info_manager"
   "image_transport"
   "flir_spinnaker_common"
-  )
+)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_auto REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
 
-foreach(pkg ${ROS2_DEPENDENCIES}) 
+foreach(pkg ${ROS2_DEPENDENCIES})
   find_package(${pkg} REQUIRED)
-endforeach(pkg)
+endforeach()
 
 ament_auto_find_build_dependencies(REQUIRED ${ROS2_DEPENDENCIES})
 
@@ -56,6 +56,26 @@ install(DIRECTORY
     launch
     DESTINATION share/${PROJECT_NAME}
 )
-  
-ament_package()
 
+if(BUILD_TESTING)
+  find_package(ament_cmake REQUIRED)
+  find_package(ament_cmake_copyright REQUIRED)
+  find_package(ament_cmake_cppcheck REQUIRED)
+  find_package(ament_cmake_cpplint REQUIRED)
+  find_package(ament_cmake_flake8 REQUIRED)
+  find_package(ament_cmake_lint_cmake REQUIRED)
+  find_package(ament_cmake_pep257 REQUIRED)
+  find_package(ament_cmake_uncrustify REQUIRED)
+  find_package(ament_cmake_xmllint REQUIRED)
+
+  ament_copyright()
+  ament_cppcheck(LANGUAGE c++)
+  ament_cpplint(FILTERS "-build/include,-runtime/indentation_namespace")
+  ament_flake8()
+  ament_lint_cmake()
+  ament_pep257()
+  ament_uncrustify()
+  ament_xmllint()
+endif()
+
+ament_package()

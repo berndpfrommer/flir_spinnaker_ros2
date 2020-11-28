@@ -13,26 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef FLIR_SPINNAKER_ROS2__FLIR_SPINNAKER_ROS2_H_
-#define FLIR_SPINNAKER_ROS2__FLIR_SPINNAKER_ROS2_H_
-
-#include <flir_spinnaker_common/driver.h>
-
-#include <camera_info_manager/camera_info_manager.hpp>
-#include <image_transport/image_transport.hpp>
-#include <memory>
-#include <rclcpp/rclcpp.hpp>
+#include <string>
+#ifndef FLIR_SPINNAKER_ROS2__CAMERA_H_
+#define FLIR_SPINNAKER_ROS2__CAMERA_H_
 
 namespace flir_spinnaker_ros2
 {
-  class FlirSpinnakerROS2
+  class Camera
   {
 public:
-    explicit FlirSpinnakerROS2(const std::shared_ptr < rclcpp::Node > & node);
-    void start();
+    explicit Camera(const std::string & serial);
 
 private:
-    void readParameters();
+    std::string void readParameters();
     // ----- variables --
     std::shared_ptr < rclcpp::Node > node_;
     image_transport::CameraPublisher pub_;
@@ -40,4 +33,5 @@ private:
     std::shared_ptr < camera_info_manager::CameraInfoManager > infoManager_;
   };
 }  // namespace flir_spinnaker_ros2
-#endif  // FLIR_SPINNAKER_ROS2__FLIR_SPINNAKER_ROS2_H_
+
+#endif  // FLIR_SPINNAKER_ROS2__CAMERA_H_
