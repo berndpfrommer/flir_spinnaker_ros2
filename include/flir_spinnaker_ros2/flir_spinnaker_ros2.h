@@ -22,6 +22,7 @@
 #include <camera_info_manager/camera_info_manager.hpp>
 #include <deque>
 #include <image_transport/image_transport.hpp>
+#include <map>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
@@ -41,6 +42,14 @@ public:
   bool stop();
 
 private:
+  struct NodeInfo
+  {
+    enum NodeType { INVALID, ENUM, FLOAT, INT, BOOL };
+    explicit NodeInfo(const std::string & n, const std::string & nodeType);
+    std::string name;
+    NodeType type{INVALID};
+    rcl_interfaces::msg::ParameterDescriptor descriptor;
+  };
   void publishImage(const ImageConstPtr & image);
   void readParameters();
   void printCameraInfo();
@@ -48,6 +57,10 @@ private:
   bool stopCamera();
   void createCameraParameters();
   void run();
+  bool setEnum(const std::string & nodeName, const std::string & v = "");
+  bool setDouble(const std::string & nodeName, double v);
+  bool setBool(const std::string & nodeName, bool v);
+  bool readParameterFile();
 
   rcl_interfaces::msg::SetParametersResult parameterChanged(
     const std::vector<rclcpp::Parameter> & params);
@@ -60,6 +73,7 @@ private:
   std::string serial_;
   std::string cameraInfoURL_;
   std::string frameId_;
+  std::string parameterFile_;
   double frameRate_;
   double exposureTime_;  // in microseconds
   bool autoExposure_;    // if auto exposure is on/off
@@ -76,6 +90,7 @@ private:
   std::deque<ImageConstPtr> imageQueue_;
   std::shared_ptr<std::thread> thread_;
   bool keepRunning_{true};
+  std::map<std::string, NodeInfo> parameterMap_;
 };
 }  // namespace flir_spinnaker_ros2
 #endif  // FLIR_SPINNAKER_ROS2__FLIR_SPINNAKER_ROS2_H_

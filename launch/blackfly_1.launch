@@ -4,6 +4,7 @@
 	name="spinnaker_node_1" output="screen" ns="/flir">
     <param name="name" value="blackfly_1"/>
     <param name="serial_number" type="str" value="'20435008'"/>
+    <param name="dump_nodemap" type="bool" value="true"/>
     <!--
     <param name="serial_number" type="str" value="'20415937'"/>
     -->
