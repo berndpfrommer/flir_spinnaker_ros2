@@ -84,6 +84,33 @@ void FlirSpinnakerROS2::createCameraParameters()
   frameRateDesc.type = 3;  // double
   frameRateDesc.description = "frame rate of camera";
   frameRate_ = node_->declare_parameter<double>("frame_rate", 10.0, frameRateDesc);
+  autoExposure_ = node_->declare_parameter<bool>("auto_exposure", true);
+  // exposure time is not used if auto_exposure is on
+  exposureTime_ = node_->declare_parameter<double>("exposure_time", 10000.0);
+}
+
+static bool check_double(const rclcpp::Parameter & p, const char * name)
+{
+  return (
+    p.get_name() == name &&
+    (p.get_type() == rclcpp::PARAMETER_DOUBLE || p.get_type() == rclcpp::PARAMETER_INTEGER));
+}
+
+static bool check_bool(const rclcpp::Parameter & p, const char * name)
+{
+  return (
+    p.get_name() == name &&
+    (p.get_type() == rclcpp::PARAMETER_INTEGER || p.get_type() == rclcpp::PARAMETER_BOOL));
+}
+
+static double get_double_int_param(const rclcpp::Parameter & p)
+{
+  return (p.get_type() == rclcpp::PARAMETER_DOUBLE ? p.as_double() : double(p.as_int()));
+}
+
+static bool get_bool_int_param(const rclcpp::Parameter & p)
+{
+  return (p.get_type() == rclcpp::PARAMETER_BOOL ? p.as_bool() : (bool)(p.as_int()));
 }
 
 rcl_interfaces::msg::SetParametersResult FlirSpinnakerROS2::parameterChanged(
@@ -91,10 +118,11 @@ rcl_interfaces::msg::SetParametersResult FlirSpinnakerROS2::parameterChanged(
 {
   for (const auto & p : params) {
     RCLCPP_INFO_STREAM(node_->get_logger(), "parameter changed: " << p.get_name());
-    if (
-      p.get_name() == "frame_rate" && driver_ &&
-      (p.get_type() == rclcpp::PARAMETER_DOUBLE || p.get_type() == rclcpp::PARAMETER_INTEGER)) {
-      double v = p.get_type() == rclcpp::PARAMETER_DOUBLE ? p.as_double() : double(p.as_int());
+    if (!driver_) {
+      continue;
+    }
+    if (check_double(p, "frame_rate")) {
+      double v = get_double_int_param(p);
       RCLCPP_INFO_STREAM(node_->get_logger(), "setting frame rate to: " << v);
       std::string msg = driver_->setFrameRate(v, &frameRate_);
       if (msg != "OK") {
@@ -104,11 +132,33 @@ rcl_interfaces::msg::SetParametersResult FlirSpinnakerROS2::parameterChanged(
         RCLCPP_WARN_STREAM(
           node_->get_logger(), "frame rate does not match desired: " << frameRate_);
       }
+    } else if (check_double(p, "exposure_time")) {
+      double v = get_double_int_param(p);
+      RCLCPP_INFO_STREAM(node_->get_logger(), "setting exposure time to: " << v);
+      std::string msg = driver_->setExposureTime(v, &exposureTime_);
+      if (msg != "OK") {
+        RCLCPP_WARN_STREAM(node_->get_logger(), "exposure time set failed: " << msg);
+      }
+      if (std::abs(v - exposureTime_) > 0.05 * exposureTime_) {
+        RCLCPP_WARN_STREAM(
+          node_->get_logger(), "exposure time does not match desired: " << exposureTime_);
+      }
+    } else if (check_bool(p, "auto_exposure")) {
+      bool v = get_bool_int_param(p);
+      RCLCPP_INFO_STREAM(node_->get_logger(), "setting auto exp to: " << v);
+      std::string msg = driver_->setAutoExposure(v, &autoExposure_);
+      if (msg != "OK") {
+        RCLCPP_WARN_STREAM(node_->get_logger(), "auto exp set failed: " << msg);
+      }
+      if (autoExposure_ != v) {
+        RCLCPP_WARN_STREAM(
+          node_->get_logger(), "auto exposure does not match desired: " << autoExposure_);
+      }
     }
   }
   rcl_interfaces::msg::SetParametersResult res;
   res.successful = true;
-  res.reason = "not implemented yet!";
+  res.reason = "all good!";
   return (res);
 }
 

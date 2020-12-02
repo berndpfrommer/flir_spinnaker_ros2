@@ -61,6 +61,8 @@ private:
   std::string cameraInfoURL_;
   std::string frameId_;
   double frameRate_;
+  double exposureTime_;  // in microseconds
+  bool autoExposure_;    // if auto exposure is on/off
   bool dumpNodeMap_{false};
   std::shared_ptr<flir_spinnaker_common::Driver> driver_;
   std::shared_ptr<camera_info_manager::CameraInfoManager> infoManager_;
