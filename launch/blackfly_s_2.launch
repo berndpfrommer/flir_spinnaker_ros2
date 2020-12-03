@@ -5,8 +5,8 @@
     <param name="parameter_file" value="$(var parameter_file)"/>
     <param name="name" value="blackfly_s_2"/>
     <param name="serial_number" type="str" value="'20435008'"/>
-    <!--
     <param name="dump_node_map" type="bool" value="true"/>
+    <!--
 -->
   </node>
 </launch>

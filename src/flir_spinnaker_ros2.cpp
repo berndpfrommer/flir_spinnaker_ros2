@@ -27,17 +27,6 @@
 
 namespace flir_spinnaker_ros2
 {
-/* These are the types declared in rclcpp::msg::ParameterType
-  uint8 PARAMETER_BOOL=1
-  uint8 PARAMETER_INTEGER=2
-  uint8 PARAMETER_DOUBLE=3
-  uint8 PARAMETER_STRING=4
-  uint8 PARAMETER_BYTE_ARRAY=5
-  uint8 PARAMETER_BOOL_ARRAY=6
-  uint8 PARAMETER_INTEGER_ARRAY=7
-  uint8 PARAMETER_DOUBLE_ARRAY=8
-  uint8 PARAMETER_STRING_ARRAY=9
-*/
 static rcl_interfaces::msg::ParameterDescriptor make_desc(
   const std::string name, int type)
 {
@@ -48,22 +37,50 @@ static rcl_interfaces::msg::ParameterDescriptor make_desc(
   return (desc);
 }
 
+static std::pair<bool, double> get_double_int_param(const rclcpp::Parameter & p)
+{
+  std::pair<bool, double> bd(false, 0);
+  if (p.get_type() == rclcpp::PARAMETER_DOUBLE) {
+    bd.second = p.as_double();
+    bd.first = true;
+  }
+  if (p.get_type() == rclcpp::PARAMETER_INTEGER) {
+    bd.second = (double)p.as_int();
+    bd.first = true;
+  }
+  return (bd);
+}
+
+static std::pair<bool, bool> get_bool_int_param(const rclcpp::Parameter & p)
+{
+  std::pair<bool, bool> bb(false, false);
+  if (p.get_type() == rclcpp::PARAMETER_BOOL) {
+    bb.second = p.as_bool();
+    bb.first = true;
+  }
+  if (p.get_type() == rclcpp::PARAMETER_INTEGER) {
+    bb.second = (bool)p.as_int();
+    bb.first = true;
+  }
+  return (bb);
+}
+
 FlirSpinnakerROS2::NodeInfo::NodeInfo(
   const std::string & n, const std::string & nodeType)
 : name(n)
 {
   if (nodeType == "float") {
     type = FLOAT;
-    descriptor = make_desc(n, 3);
+    descriptor = make_desc(n, rclcpp::ParameterType::PARAMETER_DOUBLE);
   } else if (nodeType == "int") {
     type = INT;
-    descriptor = make_desc(n, 2);
+    descriptor = make_desc(n, rclcpp::ParameterType::PARAMETER_INTEGER);
   } else if (nodeType == "bool") {
     type = BOOL;
-    descriptor = make_desc(n, 1);
+    descriptor = make_desc(n, rclcpp::ParameterType::PARAMETER_BOOL);
   } else if (nodeType == "enum") {
     type = ENUM;
-    descriptor = make_desc(n, 4);
+    descriptor = make_desc(n, rclcpp::ParameterType::PARAMETER_STRING);
   }
 }
 
@@ -75,7 +92,11 @@ FlirSpinnakerROS2::FlirSpinnakerROS2(const std::shared_ptr<rclcpp::Node> & node)
     std::bind(&FlirSpinnakerROS2::printStatus, this));
 }
 
-FlirSpinnakerROS2::~FlirSpinnakerROS2() { stop(); }
+FlirSpinnakerROS2::~FlirSpinnakerROS2()
+{
+  stop();
+  driver_.reset();  // invoke destructor
+}
 
 bool FlirSpinnakerROS2::stop()
 {
@@ -104,11 +125,10 @@ bool FlirSpinnakerROS2::stopCamera()
 void FlirSpinnakerROS2::printStatus()
 {
   if (driver_) {
-    RCLCPP_INFO_STREAM(
-      node_->get_logger(),
-      serial_ << " incoming frame rate: " << driver_->getFrameRate());
+    LOG_INFO(
+      "incoming frame rate: " << driver_->getReceiveFrameRate() << " Hz");
   } else {
-    RCLCPP_WARN_STREAM(node_->get_logger(), serial_ << " is not online!");
+    LOG_WARN("camera " << serial_ << " is not online!");
   }
 }
 
@@ -154,25 +174,6 @@ bool FlirSpinnakerROS2::readParameterFile()
     }
   }
   f.close();
-#if 0
-  parameterMap_.insert(
-    {"gain_auto", NodeInfo("AnalogControl/GainAuto", NodeInfo::ENUM)});
-
-  parameterMap_.insert(
-    {"exposure_auto",
-     NodeInfo(
-       "AcquisitionControl/ExposureAuto", NodeInfo::ENUM, "Continuous")});
-  parameterMap_.insert(
-    {"frame_rate_auto", NodeInfo(
-                          "AcquisitionControl/AcquisitionFrameRateAuto",
-                          NodeInfo::ENUM, "Continuous")});
-  parameterMap_.insert(
-    {"frame_rate",
-     NodeInfo("AcquisitionControl/AcquisitionFrameRate", NodeInfo::FLOAT, "")});
-  parameterMap_.insert(
-    {"exposure_time",
-     NodeInfo("AcquisitionControl/ExposureTime", NodeInfo::FLOAT, "10000.0")});
-#endif
   return (true);
 }
 
@@ -181,10 +182,6 @@ void FlirSpinnakerROS2::createCameraParameters()
   for (const auto & m : parameterMap_) {
     const auto ni = m.second;
     try {
-#if 1
-      LOG_INFO(
-        "creating param " << m.first << " desc: " << (int)ni.descriptor.type);
-#endif
       node_->declare_parameter(
         m.first, rclcpp::ParameterValue(), ni.descriptor, false);
     } catch (rclcpp::exceptions::InvalidParameterTypeException & e) {
@@ -195,50 +192,19 @@ void FlirSpinnakerROS2::createCameraParameters()
   }
 }
 
-static bool check_double(const rclcpp::Parameter & p, const char * name)
-{
-  return (
-    p.get_name() == name && (p.get_type() == rclcpp::PARAMETER_DOUBLE ||
-                             p.get_type() == rclcpp::PARAMETER_INTEGER));
-}
-
-static bool check_bool(const rclcpp::Parameter & p, const char * name)
-{
-  return (
-    p.get_name() == name && (p.get_type() == rclcpp::PARAMETER_INTEGER ||
-                             p.get_type() == rclcpp::PARAMETER_BOOL));
-}
-
-static double get_double_int_param(const rclcpp::Parameter & p)
-{
-  return (
-    p.get_type() == rclcpp::PARAMETER_DOUBLE ? p.as_double()
-                                             : double(p.as_int()));
-}
-
-static bool get_bool_int_param(const rclcpp::Parameter & p)
-{
-  return (
-    p.get_type() == rclcpp::PARAMETER_BOOL ? p.as_bool() : (bool)(p.as_int()));
-}
-
 bool FlirSpinnakerROS2::setEnum(
   const std::string & nodeName, const std::string & v)
 {
-  RCLCPP_INFO_STREAM(
-    node_->get_logger(), "setting " << nodeName << " to: " << v);
+  LOG_INFO("setting " << nodeName << " to: " << v);
   std::string retV;  // what actually was set
   std::string msg = driver_->setEnum(nodeName, v, &retV);
   bool status(true);
   if (msg != "OK") {
-    RCLCPP_WARN_STREAM(
-      node_->get_logger(), "setting " << nodeName << " failed: " << msg);
+    LOG_WARN("setting " << nodeName << " failed: " << msg);
     status = false;
   }
   if (v != retV) {
-    RCLCPP_WARN_STREAM(
-      node_->get_logger(),
-      nodeName << " set to: " << retV << " instead of: " << v);
+    LOG_WARN(nodeName << " set to: " << retV << " instead of: " << v);
     status = false;
   }
   return (status);
@@ -291,12 +257,10 @@ rcl_interfaces::msg::SetParametersResult FlirSpinnakerROS2::parameterChanged(
       continue;
     }
     const NodeInfo & ni = it->second;
-    LOG_INFO("param changed, type " << ni.name << ": " << (int)ni.type);
     if (p.get_type() == rclcpp::PARAMETER_NOT_SET) {
       //LOG_INFO("not setting unset param: " << ni.name);
       continue;
     }
-
     switch (ni.type) {
       case NodeInfo::ENUM: {
         std::string s = p.value_to_string();
@@ -305,33 +269,26 @@ rcl_interfaces::msg::SetParametersResult FlirSpinnakerROS2::parameterChanged(
         setEnum(ni.name, s);
         break;
       }
-      case NodeInfo::FLOAT:
-        if (
-          p.get_type() == rclcpp::PARAMETER_DOUBLE ||
-          p.get_type() == rclcpp::PARAMETER_INTEGER) {
-          setDouble(
-            ni.name, p.get_type() == rclcpp::PARAMETER_DOUBLE
-                       ? p.as_double()
-                       : double(p.as_int()));
+      case NodeInfo::FLOAT: {
+        auto bd = get_double_int_param(p);
+        if (bd.first) {
+          setDouble(ni.name, bd.second);
         } else {
           LOG_WARN(
-            "bad non-float parameter: " << p.get_name()
-                                        << " type: " << p.get_type());
+            "bad non-float " << p.get_name() << " type: " << p.get_type());
         }
         break;
-      case NodeInfo::BOOL:
-        if (
-          p.get_type() == rclcpp::PARAMETER_BOOL ||
-          p.get_type() == rclcpp::PARAMETER_INTEGER) {
-          setBool(
-            ni.name, p.get_type() == rclcpp::PARAMETER_BOOL ? p.as_bool()
-                                                            : bool(p.as_int()));
+      }
+      case NodeInfo::BOOL: {
+        auto bb = get_bool_int_param(p);
+        if (bb.first) {
+          setBool(ni.name, bb.second);
         } else {
           LOG_WARN(
-            "bad non-bool parameter: " << p.get_name()
-                                       << " type: " << p.get_type());
+            "bad non-bool " << p.get_name() << " type: " << p.get_type());
         }
         break;
+      }
       default:
         LOG_WARN("invalid node type in map: " << ni.type);
     }
@@ -344,157 +301,146 @@ rcl_interfaces::msg::SetParametersResult FlirSpinnakerROS2::parameterChanged(
 
 void FlirSpinnakerROS2::publishImage(const ImageConstPtr & im)
 {
-  std::unique_lock<std::mutex> lock(mutex_);
-  if (imageQueue_.size() < 2) {
-    imageQueue_.push_back(im);
-    cv_.notify_all();
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (imageQueue_.size() < 2) {
+      imageQueue_.push_back(im);
+      cv_.notify_all();
+    }
   }
 }
 
-void FlirSpinnakerROS2::run()
-{
-  while (keepRunning_) {
-    {
-      ImageConstPtr img;
+  void FlirSpinnakerROS2::run()
+  {
+    while (keepRunning_ && rclcpp::ok()) {
       {
-        std::unique_lock<std::mutex> lock(mutex_);
-        const std::chrono::microseconds timeout((int64_t)(10000000LL));
-        while (imageQueue_.empty()) {
-          cv_.wait_for(lock, timeout);
+        ImageConstPtr img;
+        {  // ------- locked section ---
+          std::unique_lock<std::mutex> lock(mutex_);
+          // one second timeout
+          const std::chrono::microseconds timeout((int64_t)(1000000LL));
+          while (imageQueue_.empty() && keepRunning_ && rclcpp::ok()) {
+            cv_.wait_for(lock, timeout);
+          }
+          if (!imageQueue_.empty()) {
+            img = imageQueue_.back();
+            imageQueue_.pop_back();
+          }
+        }  // -------- end of locked section
+        if (img && keepRunning_ && rclcpp::ok()) {
+          doPublish(img);
         }
-        if (!imageQueue_.empty()) {
-          img = imageQueue_.back();
-          imageQueue_.pop_back();
-        }
-      }
-      if (img) {
-        doPublish(img);
       }
     }
   }
-}
 
-void FlirSpinnakerROS2::doPublish(const ImageConstPtr & im)
-{
-  imageMsg_->header.stamp = rclcpp::Time(im->time_);
-  cameraInfoMsg_->header.stamp = rclcpp::Time(im->time_);
+  void FlirSpinnakerROS2::doPublish(const ImageConstPtr & im)
+  {
+    // todo: honor the encoding in the image
+    imageMsg_->header.stamp = rclcpp::Time(im->time_);
+    cameraInfoMsg_->header.stamp = rclcpp::Time(im->time_);
 
-  const std::string encoding =
-    sensor_msgs::image_encodings::BAYER_RGGB8;  // looks good
-  //const std::string encoding = sensor_msgs::image_encodings::BAYER_GBRG8; // checkered
-  //const std::string encoding = sensor_msgs::image_encodings::BAYER_BGGR8; // smooth but col reversed??
-  //const std::string encoding = sensor_msgs::image_encodings::BAYER_GRBG8;  // checkered
+    const std::string encoding =
+      sensor_msgs::image_encodings::BAYER_RGGB8;  // looks good
 
-  // will make deep copy. Do we need to?
-  bool ret = sensor_msgs::fillImage(
-    *imageMsg_, encoding, im->height_, im->width_, im->stride_, im->data_);
-  if (!ret) {
-    RCLCPP_ERROR_STREAM(node_->get_logger(), "fill image failed!");
-  }
-  //const auto t0 = node_->now();
-  pub_.publish(imageMsg_, cameraInfoMsg_);
-  //const auto t1 = node_->now();
-  //std::cout << "dt: " << (t1 - t0).nanoseconds() * 1e-9 << std::endl;
-}
-
-void FlirSpinnakerROS2::printCameraInfo()
-{
-  if (cameraRunning_) {
-    RCLCPP_INFO_STREAM(
-      node_->get_logger(),
-      "camera has pixel format: " << driver_->getPixelFormat());
-  }
-}
-
-void FlirSpinnakerROS2::startCamera()
-{
-  if (!cameraRunning_) {
-    RCLCPP_INFO_STREAM(node_->get_logger(), "starting camera!");
-    flir_spinnaker_common::Driver::Callback cb =
-      std::bind(&FlirSpinnakerROS2::publishImage, this, std::placeholders::_1);
-    cameraRunning_ = driver_->startCamera(cb);
-    if (!cameraRunning_) {
-      RCLCPP_ERROR_STREAM(node_->get_logger(), "failed to start camera!");
+    // will make deep copy. Do we need to?
+    bool ret = sensor_msgs::fillImage(
+      *imageMsg_, encoding, im->height_, im->width_, im->stride_, im->data_);
+    if (!ret) {
+      LOG_ERROR("fill image failed!");
     } else {
-      printCameraInfo();
+      //const auto t0 = node_->now();
+      pub_.publish(imageMsg_, cameraInfoMsg_);
+      //const auto t1 = node_->now();
+      //std::cout << "dt: " << (t1 - t0).nanoseconds() * 1e-9 << std::endl;
     }
   }
-}
 
-bool FlirSpinnakerROS2::start()
-{
-  readParameters();
-  if (!readParameterFile()) {
-    return (false);
-  }
-  infoManager_ = std::make_shared<camera_info_manager::CameraInfoManager>(
-    node_.get(), name_, cameraInfoURL_);
-  cameraInfoMsg_ = std::make_shared<sensor_msgs::msg::CameraInfo>(
-    infoManager_->getCameraInfo());
-  imageMsg_ = std::make_shared<sensor_msgs::msg::Image>();
-  imageMsg_->header.frame_id = frameId_;
-  cameraInfoMsg_->header.frame_id = frameId_;
-
-  //const rmw_qos_profile_t qos = rmw_qos_profile_default;
-  rmw_qos_profile_t qos_profile;
-  qos_profile = rmw_qos_profile_default;
-  qos_profile.history = RMW_QOS_POLICY_HISTORY_KEEP_LAST;
-  //qos_profile.depth = 1;  // keep at most one image
-  qos_profile.depth = 1;  // keep at most one image
-
-  qos_profile.reliability = RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT;
-  //qos_profile.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
-
-  //qos_profile.durability = RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL;
-  //qos_profile.durability = RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT;
-  qos_profile.durability =
-    RMW_QOS_POLICY_DURABILITY_VOLATILE;  // sender does not have to store
-
-  qos_profile.deadline.sec =
-    5;  // max expected time between messages beeing published
-  qos_profile.deadline.nsec = 0;
-
-  qos_profile.lifespan.sec =
-    1;  // how long until messages are considered expired
-  qos_profile.lifespan.nsec = 0;
-
-  qos_profile.liveliness_lease_duration.sec =
-    10;  // how long until client is considered dead
-  qos_profile.liveliness_lease_duration.nsec = 0;
-
-  pub_ = image_transport::create_camera_publisher(
-    node_.get(), name_ + "/image_raw", qos_profile);
-  driver_ = std::make_shared<flir_spinnaker_common::Driver>();
-  RCLCPP_INFO_STREAM(
-    node_->get_logger(),
-    "using spinnaker library version: " + driver_->getLibraryVersion());
-  const auto camList = driver_->getSerialNumbers();
-  if (camList.empty()) {
-    RCLCPP_WARN_STREAM(node_->get_logger(), "no cameras found!");
-  }
-  if (std::find(camList.begin(), camList.end(), serial_) == camList.end()) {
-    RCLCPP_ERROR_STREAM(
-      node_->get_logger(), "no camera found with serial number:" << serial_);
-    for (const auto cam : camList) {
-      RCLCPP_WARN_STREAM(node_->get_logger(), "found cameras: " << cam);
+  void FlirSpinnakerROS2::printCameraInfo()
+  {
+    if (cameraRunning_) {
+      LOG_INFO("camera has pixel format: " << driver_->getPixelFormat());
     }
-    return (false);
   }
-  keepRunning_ = true;
-  thread_ = std::make_shared<std::thread>(&FlirSpinnakerROS2::run, this);
 
-  if (driver_->initCamera(serial_)) {
-    if (dumpNodeMap_) {
-      LOG_INFO("getting nodemap!");
-      std::string nm = driver_->getNodeMapAsString();
-      std::cout << nm;
+  void FlirSpinnakerROS2::startCamera()
+  {
+    if (!cameraRunning_) {
+      LOG_INFO("starting camera!");
+      flir_spinnaker_common::Driver::Callback cb = std::bind(
+        &FlirSpinnakerROS2::publishImage, this, std::placeholders::_1);
+      cameraRunning_ = driver_->startCamera(cb);
+      if (!cameraRunning_) {
+        LOG_ERROR("failed to start camera!");
+      } else {
+        printCameraInfo();
+      }
     }
-    startCamera();  // TODO: once ROS2 supports subscriber status callbacks, this can go!
-    createCameraParameters();
-  } else {
-    RCLCPP_ERROR_STREAM(
-      node_->get_logger(), "init camera failed for cam: " << serial_);
   }
-  return (true);
-}
-}  // namespace flir_spinnaker_ros2
+
+  bool FlirSpinnakerROS2::start()
+  {
+    readParameters();
+    if (!readParameterFile()) {
+      return (false);
+    }
+    infoManager_ = std::make_shared<camera_info_manager::CameraInfoManager>(
+      node_.get(), name_, cameraInfoURL_);
+    cameraInfoMsg_ = std::make_shared<sensor_msgs::msg::CameraInfo>(
+      infoManager_->getCameraInfo());
+    imageMsg_ = std::make_shared<sensor_msgs::msg::Image>();
+    imageMsg_->header.frame_id = frameId_;
+    cameraInfoMsg_->header.frame_id = frameId_;
+
+    rmw_qos_profile_t qosProf = rmw_qos_profile_default;
+    qosProf.history = RMW_QOS_POLICY_HISTORY_KEEP_LAST;
+    qosProf.depth = 1;  // keep at most one image
+
+    qosProf.reliability = RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT;
+    //qosProf.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
+
+    //qosProf.durability = RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL;
+    //qosProf.durability = RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT;
+    qosProf.durability =
+      RMW_QOS_POLICY_DURABILITY_VOLATILE;  // sender does not have to store
+    qosProf.deadline.sec = 5;              // max expect time between msgs pub
+    qosProf.deadline.nsec = 0;
+
+    qosProf.lifespan.sec = 1;  // how long until msg are considered expired
+    qosProf.lifespan.nsec = 0;
+
+    qosProf.liveliness_lease_duration.sec = 10;  // time to declare client dead
+    qosProf.liveliness_lease_duration.nsec = 0;
+
+    pub_ = image_transport::create_camera_publisher(
+      node_.get(), name_ + "/image_raw", qosProf);
+    driver_ = std::make_shared<flir_spinnaker_common::Driver>();
+    LOG_INFO("using spinnaker lib version: " + driver_->getLibraryVersion());
+    const auto camList = driver_->getSerialNumbers();
+    if (camList.empty()) {
+      LOG_WARN("driver found no cameras!");
+    }
+    if (std::find(camList.begin(), camList.end(), serial_) == camList.end()) {
+      LOG_ERROR("no camera found with serial number:" << serial_);
+      for (const auto cam : camList) {
+        LOG_WARN("found cameras: " << cam);
+      }
+      return (false);
+    }
+    keepRunning_ = true;
+    thread_ = std::make_shared<std::thread>(&FlirSpinnakerROS2::run, this);
+
+    if (driver_->initCamera(serial_)) {
+      if (dumpNodeMap_) {
+        LOG_INFO("dumping node map!");
+        std::string nm = driver_->getNodeMapAsString();
+        std::cout << nm;
+      }
+      startCamera();  // TODO: once ROS2 supports subscriber status callbacks, this can go!
+      createCameraParameters();
+    } else {
+      LOG_ERROR("init camera failed for cam: " << serial_);
+    }
+    return (true);
+  }
+  }  // namespace flir_spinnaker_ros2

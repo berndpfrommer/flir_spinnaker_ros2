@@ -21,14 +21,18 @@
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("flir_spinnaker_ros2");
-  const auto fs2 = std::make_shared<flir_spinnaker_ros2::FlirSpinnakerROS2>(node);
+  std::shared_ptr<rclcpp::Node> node =
+    rclcpp::Node::make_shared("flir_spinnaker_ros2");
+  const auto fs2 =
+    std::make_shared<flir_spinnaker_ros2::FlirSpinnakerROS2>(node);
 
   if (fs2->start()) {
     RCLCPP_INFO(node->get_logger(), "flir_spinnaker_ros2_node started up!");
     // actually run the node
     rclcpp::spin(node);  // should not return
     rclcpp::shutdown();
+  } else {
+    RCLCPP_ERROR(node->get_logger(), "flir_spinnaker_ros2_node start failed!");
   }
   return 0;
 }

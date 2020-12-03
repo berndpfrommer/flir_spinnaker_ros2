@@ -56,11 +56,11 @@ private:
   void startCamera();
   bool stopCamera();
   void createCameraParameters();
-  void run();
   bool setEnum(const std::string & nodeName, const std::string & v = "");
   bool setDouble(const std::string & nodeName, double v);
   bool setBool(const std::string & nodeName, bool v);
   bool readParameterFile();
+  void run();  // thread
 
   rcl_interfaces::msg::SetParametersResult parameterChanged(
     const std::vector<rclcpp::Parameter> & params);
