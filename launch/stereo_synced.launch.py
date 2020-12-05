@@ -35,27 +35,30 @@ def generate_launch_description():
             composable_node_descriptions=[
                 ComposableNode(
                     package='flir_spinnaker_ros2',
-                    plugin='flir_spinnaker_ros2::FlirSpinnakerROS2',
+                    plugin='flir_spinnaker_ros2::CameraDriver',
                     name=LaunchConfig('cam_0_name'),
                     parameters=[camera_params,
                         {'name': LaunchConfig('cam_0_name'),
                          'parameter_file': config_dir + 'blackfly_s.cfg',
-                         'serial_number': '20435008'}]
+                         'serial_number': '20435008'}],
+                    extra_arguments=[{'use_intra_process_comms': True}],
                 ),
                 ComposableNode(
                     package='flir_spinnaker_ros2',
-                    plugin='flir_spinnaker_ros2::FlirSpinnakerROS2',
+                    plugin='flir_spinnaker_ros2::CameraDriver',
                     name='cam_1',
                     parameters=[camera_params,
                         {'name': LaunchConfig('cam_1_name'),
                          'parameter_file': config_dir + 'blackfly_s.cfg',
-                         'serial_number': '20415937'}]
+                         'serial_number': '20415937'}],
+                    extra_arguments=[{'use_intra_process_comms': True}],
                 ),
                 ComposableNode(
                     package='cam_sync_ros2',
                     plugin='cam_sync_ros2::CamSync',
                     name='sync',
-                    parameters=[]
+                    parameters=[],
+                    extra_arguments=[{'use_intra_process_comms': True}],
                 )
             ],
             output='screen',

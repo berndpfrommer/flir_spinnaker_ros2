@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef FLIR_SPINNAKER_ROS2__FLIR_SPINNAKER_ROS2_H_
-#define FLIR_SPINNAKER_ROS2__FLIR_SPINNAKER_ROS2_H_
+#ifndef FLIR_SPINNAKER_ROS2__CAMERA_DRIVER_H_
+#define FLIR_SPINNAKER_ROS2__CAMERA_DRIVER_H_
 
 #include <flir_spinnaker_common/driver.h>
 #include <flir_spinnaker_common/image.h>
@@ -31,12 +31,12 @@
 
 namespace flir_spinnaker_ros2
 {
-class FlirSpinnakerROS2 : public rclcpp::Node
+class CameraDriver : public rclcpp::Node
 {
 public:
   typedef flir_spinnaker_common::ImageConstPtr ImageConstPtr;
-  explicit FlirSpinnakerROS2(const rclcpp::NodeOptions & options);
-  ~FlirSpinnakerROS2();
+  explicit CameraDriver(const rclcpp::NodeOptions & options);
+  ~CameraDriver();
 
   bool start();
   bool stop();
@@ -83,9 +83,10 @@ private:
   bool debug_{false};
   std::shared_ptr<flir_spinnaker_common::Driver> driver_;
   std::shared_ptr<camera_info_manager::CameraInfoManager> infoManager_;
-  sensor_msgs::msg::Image::SharedPtr imageMsg_;
-  sensor_msgs::msg::CameraInfo::SharedPtr cameraInfoMsg_;
-  rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr callbackHandle_;  // keep alive callbacks
+  sensor_msgs::msg::Image imageMsg_;
+  sensor_msgs::msg::CameraInfo cameraInfoMsg_;
+  rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr
+    callbackHandle_;  // keep alive callbacks
   rclcpp::TimerBase::SharedPtr statusTimer_;
   bool cameraRunning_{false};
   std::mutex mutex_;
@@ -97,4 +98,4 @@ private:
   std::vector<std::string> parameterList_;  // remember original ordering
 };
 }  // namespace flir_spinnaker_ros2
-#endif  // FLIR_SPINNAKER_ROS2__FLIR_SPINNAKER_ROS2_H_
+#endif  // FLIR_SPINNAKER_ROS2__CAMERA_DRIVER_H_

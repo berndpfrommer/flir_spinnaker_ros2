@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <flir_spinnaker_ros2/flir_spinnaker_ros2.h>
+#include <flir_spinnaker_ros2/camera_driver.h>
 
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -21,10 +21,10 @@
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<flir_spinnaker_ros2::FlirSpinnakerROS2>(
-    rclcpp::NodeOptions());
+  auto node =
+    std::make_shared<flir_spinnaker_ros2::CameraDriver>(rclcpp::NodeOptions());
 
-  RCLCPP_INFO(node->get_logger(), "flir_spinnaker_ros2_node started up!");
+  RCLCPP_INFO(node->get_logger(), "camera_driver_node started up!");
   // actually run the node
   rclcpp::spin(node);  // should not return
   rclcpp::shutdown();

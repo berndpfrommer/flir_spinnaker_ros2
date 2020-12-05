@@ -40,32 +40,32 @@ endforeach()
 
 ament_auto_find_build_dependencies(REQUIRED ${ROS2_DEPENDENCIES})
 
-ament_auto_add_library(flir_spinnaker_ros2 SHARED
-  src/flir_spinnaker_ros2.cpp
+ament_auto_add_library(camera_driver SHARED
+  src/camera_driver.cpp
 )
 
-ament_auto_add_executable(flir_spinnaker_ros2_node
-  src/flir_spinnaker_ros2_node.cpp
+ament_auto_add_executable(camera_driver_node
+  src/camera_driver_node.cpp
 )
 
-rclcpp_components_register_nodes(flir_spinnaker_ros2 "flir_spinnaker_ros2::FlirSpinnakerROS2")
+rclcpp_components_register_nodes(camera_driver "flir_spinnaker_ros2::CameraDriver")
 
-target_include_directories(flir_spinnaker_ros2 PRIVATE include)
+target_include_directories(camera_driver PRIVATE include)
 
 install(TARGETS
-    flir_spinnaker_ros2
-    flir_spinnaker_ros2_node
-    DESTINATION lib
+  camera_driver
+  camera_driver_node
+  DESTINATION lib
 )
 
 install(DIRECTORY
-    config
-    DESTINATION share/${PROJECT_NAME}/
+  config
+  DESTINATION share/${PROJECT_NAME}/
 )
 
 install(DIRECTORY
-    launch
-    DESTINATION share/${PROJECT_NAME}/
+  launch
+  DESTINATION share/${PROJECT_NAME}/
 )
  
 
