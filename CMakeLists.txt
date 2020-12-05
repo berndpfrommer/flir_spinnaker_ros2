@@ -40,27 +40,34 @@ endforeach()
 
 ament_auto_find_build_dependencies(REQUIRED ${ROS2_DEPENDENCIES})
 
-ament_auto_add_executable(flir_spinnaker_ros2
+ament_auto_add_library(flir_spinnaker_ros2 SHARED
   src/flir_spinnaker_ros2.cpp
+)
+
+ament_auto_add_executable(flir_spinnaker_ros2_node
   src/flir_spinnaker_ros2_node.cpp
 )
+
+rclcpp_components_register_nodes(flir_spinnaker_ros2 "flir_spinnaker_ros2::FlirSpinnakerROS2")
 
 target_include_directories(flir_spinnaker_ros2 PRIVATE include)
 
 install(TARGETS
     flir_spinnaker_ros2
-    DESTINATION lib/${PROJECT_NAME}
+    flir_spinnaker_ros2_node
+    DESTINATION lib
 )
 
 install(DIRECTORY
-    launch config
-    DESTINATION share/${PROJECT_NAME}
+    config
+    DESTINATION share/${PROJECT_NAME}/
+)
+
+install(DIRECTORY
+    launch
+    DESTINATION share/${PROJECT_NAME}/
 )
  
-install(DIRECTORY
-    config
-    DESTINATION share/${PROJECT_NAME}
-)
 
 if(BUILD_TESTING)
   find_package(ament_cmake REQUIRED)

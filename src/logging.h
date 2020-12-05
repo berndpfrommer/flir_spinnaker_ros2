@@ -26,17 +26,17 @@ namespace flir_spinnaker_ros2
     SS << __VA_ARGS__;                   \
     throw(std::runtime_error(SS.str())); \
   }
-#define LOG_INFO(...)                                     \
-  {                                                       \
-    RCLCPP_INFO_STREAM(node_->get_logger(), __VA_ARGS__); \
+#define LOG_INFO(...)                              \
+  {                                                \
+    RCLCPP_INFO_STREAM(get_logger(), __VA_ARGS__); \
   }
-#define LOG_WARN(...)                                     \
-  {                                                       \
-    RCLCPP_WARN_STREAM(node_->get_logger(), __VA_ARGS__); \
+#define LOG_WARN(...)                              \
+  {                                                \
+    RCLCPP_WARN_STREAM(get_logger(), __VA_ARGS__); \
   }
-#define LOG_ERROR(...)                                     \
-  {                                                        \
-    RCLCPP_ERROR_STREAM(node_->get_logger(), __VA_ARGS__); \
+#define LOG_ERROR(...)                              \
+  {                                                 \
+    RCLCPP_ERROR_STREAM(get_logger(), __VA_ARGS__); \
   }
 
 }  // namespace flir_spinnaker_ros2

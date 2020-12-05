@@ -7,9 +7,11 @@
     <param name="name" value="grasshopper"/>
     <param name="serial_number" type="str" value="'17274483'"/>
     <param name="dump_node_map" type="bool" value="false"/>
+    <param name="frame_rate" type="double" value="2.0"/>
+    <param name="gain_auto" type="str" value="Continuous"/>
+    <param name="frame_rate_auto" type="str" value="'Off'"/>
+    <param name="exposure_auto" type="str" value="Continuous"/>
     <!--
-    <param name="frame_rate" type="double" value="10.0"/>
-    <param name="gain_auto" type="str" value="'Off'"/>
 -->
     <!--
     <param name="serial_number" type="str" value="'20435008'"/>

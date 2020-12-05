@@ -31,11 +31,11 @@
 
 namespace flir_spinnaker_ros2
 {
-class FlirSpinnakerROS2
+class FlirSpinnakerROS2 : public rclcpp::Node
 {
 public:
   typedef flir_spinnaker_common::ImageConstPtr ImageConstPtr;
-  explicit FlirSpinnakerROS2(const std::shared_ptr<rclcpp::Node> & node);
+  explicit FlirSpinnakerROS2(const rclcpp::NodeOptions & options);
   ~FlirSpinnakerROS2();
 
   bool start();
@@ -56,10 +56,12 @@ private:
   void startCamera();
   bool stopCamera();
   void createCameraParameters();
+  void setParameter(const NodeInfo & ni, const rclcpp::Parameter & p);
   bool setEnum(const std::string & nodeName, const std::string & v = "");
   bool setDouble(const std::string & nodeName, double v);
   bool setBool(const std::string & nodeName, bool v);
   bool readParameterFile();
+
   void run();  // thread
 
   rcl_interfaces::msg::SetParametersResult parameterChanged(
@@ -78,6 +80,7 @@ private:
   double exposureTime_;  // in microseconds
   bool autoExposure_;    // if auto exposure is on/off
   bool dumpNodeMap_{false};
+  bool debug_{false};
   std::shared_ptr<flir_spinnaker_common::Driver> driver_;
   std::shared_ptr<camera_info_manager::CameraInfoManager> infoManager_;
   sensor_msgs::msg::Image::SharedPtr imageMsg_;
@@ -91,6 +94,7 @@ private:
   std::shared_ptr<std::thread> thread_;
   bool keepRunning_{true};
   std::map<std::string, NodeInfo> parameterMap_;
+  std::vector<std::string> parameterList_;  // remember original ordering
 };
 }  // namespace flir_spinnaker_ros2
 #endif  // FLIR_SPINNAKER_ROS2__FLIR_SPINNAKER_ROS2_H_
