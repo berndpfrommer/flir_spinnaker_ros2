@@ -19,14 +19,17 @@
 #include <flir_spinnaker_common/driver.h>
 #include <flir_spinnaker_common/image.h>
 
+#include <camera_control_msgs_ros2/msg/camera_control.hpp>
 #include <camera_info_manager/camera_info_manager.hpp>
 #include <deque>
+#include <image_meta_msgs_ros2/msg/image_meta_data.hpp>
 #include <image_transport/image_transport.hpp>
 #include <map>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <std_msgs/msg/float64.hpp>
 #include <thread>
 
 namespace flir_spinnaker_ros2
@@ -66,12 +69,15 @@ private:
 
   rcl_interfaces::msg::SetParametersResult parameterChanged(
     const std::vector<rclcpp::Parameter> & params);
+  void controlCallback(
+    const camera_control_msgs_ros2::msg::CameraControl::UniquePtr msg);
   void printStatus();
   void doPublish(const ImageConstPtr & im);
   // ----- variables --
   std::shared_ptr<rclcpp::Node> node_;
   image_transport::CameraPublisher pub_;
-  std::string name_;
+  rclcpp::Publisher<image_meta_msgs_ros2::msg::ImageMetaData>::SharedPtr
+    metaPub_;
   std::string serial_;
   std::string cameraInfoURL_;
   std::string frameId_;
@@ -81,10 +87,14 @@ private:
   bool autoExposure_;    // if auto exposure is on/off
   bool dumpNodeMap_{false};
   bool debug_{false};
+  bool computeBrightness_{false};
+  uint32_t currentExposureTime_{0};
+  float currentGain_{std::numeric_limits<float>::lowest()};
   std::shared_ptr<flir_spinnaker_common::Driver> driver_;
   std::shared_ptr<camera_info_manager::CameraInfoManager> infoManager_;
   sensor_msgs::msg::Image imageMsg_;
   sensor_msgs::msg::CameraInfo cameraInfoMsg_;
+  image_meta_msgs_ros2::msg::ImageMetaData metaMsg_;
   rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr
     callbackHandle_;  // keep alive callbacks
   rclcpp::TimerBase::SharedPtr statusTimer_;
@@ -96,6 +106,8 @@ private:
   bool keepRunning_{true};
   std::map<std::string, NodeInfo> parameterMap_;
   std::vector<std::string> parameterList_;  // remember original ordering
+  rclcpp::Subscription<camera_control_msgs_ros2::msg::CameraControl>::SharedPtr
+    controlSub_;
 };
 }  // namespace flir_spinnaker_ros2
 #endif  // FLIR_SPINNAKER_ROS2__CAMERA_DRIVER_H_

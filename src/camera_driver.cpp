@@ -141,7 +141,6 @@ void CameraDriver::printStatus()
 
 void CameraDriver::readParameters()
 {
-  name_ = this->declare_parameter<std::string>("name", "missing_camera_name");
   serial_ = this->declare_parameter<std::string>(
     "serial_number", "missing_serial_number");
   try {
@@ -154,11 +153,13 @@ void CameraDriver::readParameters()
   }
   LOG_INFO("debug: " << debug_);
   cameraInfoURL_ = this->declare_parameter<std::string>("camerainfo_url", "");
-  frameId_ = this->declare_parameter<std::string>("frame_id", name_);
+  frameId_ = this->declare_parameter<std::string>("frame_id", get_name());
   dumpNodeMap_ = this->declare_parameter<bool>("dump_node_map", false);
+  computeBrightness_ =
+    this->declare_parameter<bool>("compute_brightness", false);
   parameterFile_ =
     this->declare_parameter<std::string>("parameter_file", "parameters.cfg");
-  LOG_INFO("camera name: " << name_ << " serial: " << serial_);
+  LOG_INFO(" serial: " << serial_);
   callbackHandle_ = this->add_on_set_parameters_callback(
     std::bind(&CameraDriver::parameterChanged, this, std::placeholders::_1));
 }
@@ -240,7 +241,7 @@ bool CameraDriver::setDouble(const std::string & nodeName, double v)
     LOG_WARN("setting " << nodeName << " failed: " << msg);
     status = false;
   }
-  if (std::abs(v - retV) * retV > 0.05) {
+  if (std::abs(v - retV) > 0.025 * std::abs(v + retV)) {
     LOG_WARN(nodeName << " set to: " << retV << " instead of: " << v);
     status = false;
   }
@@ -327,6 +328,53 @@ rcl_interfaces::msg::SetParametersResult CameraDriver::parameterChanged(
   return (res);
 }
 
+void CameraDriver::controlCallback(
+  const camera_control_msgs_ros2::msg::CameraControl::UniquePtr msg)
+{
+  /*
+  LOG_INFO(
+    "control msg: time: " << currentExposureTime_ << " -> "
+                          << msg->exposure_time << " gain: " << currentGain_
+                          << " -> " << msg->gain); */
+  const uint32_t et = msg->exposure_time;
+  const float gain = msg->gain;
+  bool logTime(false);
+  bool logGain(false);
+  try {
+    if (et > 0 && et != currentExposureTime_) {
+      const auto it = parameterMap_.find("exposure_time");
+      if (it != parameterMap_.end()) {
+        const auto & ni = it->second;
+        setDouble(ni.name, et);
+        currentExposureTime_ = et;
+        logTime = true;
+      } else {
+        LOG_WARN("no node name defined for exposure_time, check .cfg file!");
+      }
+    }
+    if (gain > std::numeric_limits<float>::lowest() && gain != currentGain_) {
+      const auto it = parameterMap_.find("gain");
+      if (it != parameterMap_.end()) {
+        const auto & ni = it->second;
+        setDouble(ni.name, gain);
+        currentGain_ = gain;
+        logGain = true;
+      } else {
+        LOG_WARN("no node name defined for exposure_time, check .cfg file!");
+      }
+    }
+  } catch (const flir_spinnaker_common::Driver::DriverException & e) {
+    LOG_WARN("failed to control: " << e.what());
+  }
+
+  if (logTime) {
+    LOG_INFO("changed exposure time to " << et << "us");
+  }
+  if (logGain) {
+    LOG_INFO("changed gain to " << gain << "db");
+  }
+}
+
 void CameraDriver::publishImage(const ImageConstPtr & im)
 {
   {
@@ -384,6 +432,15 @@ void CameraDriver::doPublish(const ImageConstPtr & im)
   } else {
     //const auto t0 = this->now();
     pub_.publish(std::move(img), std::move(cinfo));
+    if (metaPub_->get_subscription_count() != 0) {
+      metaMsg_.header.stamp = t;
+      metaMsg_.brightness = im->brightness_;
+      metaMsg_.exposure_time = im->exposureTime_;
+      metaMsg_.max_exposure_time = im->maxExposureTime_;
+      metaMsg_.gain = im->gain_;
+      metaMsg_.camera_time = im->imageTime_;
+      metaPub_->publish(metaMsg_);
+    }
     //const auto t1 = this->now();
     //std::cout << "dt: " << (t1 - t0).nanoseconds() * 1e-9 << std::endl;
   }
@@ -418,10 +475,18 @@ bool CameraDriver::start()
     return (false);
   }
   infoManager_ = std::make_shared<camera_info_manager::CameraInfoManager>(
-    this, name_, cameraInfoURL_);
+    this, get_name(), cameraInfoURL_);
+  controlSub_ =
+    this->create_subscription<camera_control_msgs_ros2::msg::CameraControl>(
+      "~/control", 10,
+      std::bind(&CameraDriver::controlCallback, this, std::placeholders::_1));
+  metaPub_ =
+    create_publisher<image_meta_msgs_ros2::msg::ImageMetaData>("~/meta", 1);
+
   cameraInfoMsg_ = infoManager_->getCameraInfo();
   imageMsg_.header.frame_id = frameId_;
   cameraInfoMsg_.header.frame_id = frameId_;
+  metaMsg_.header.frame_id = frameId_;
 
   rmw_qos_profile_t qosProf = rmw_qos_profile_default;
   qosProf.history = RMW_QOS_POLICY_HISTORY_KEEP_LAST;
@@ -443,10 +508,11 @@ bool CameraDriver::start()
   qosProf.liveliness_lease_duration.sec = 10;  // time to declare client dead
   qosProf.liveliness_lease_duration.nsec = 0;
 
-  pub_ = image_transport::create_camera_publisher(
-    this, name_ + "/image_raw", qosProf);
+  pub_ = image_transport::create_camera_publisher(this, "~/image_raw", qosProf);
   driver_ = std::make_shared<flir_spinnaker_common::Driver>();
   driver_->setDebug(debug_);
+  driver_->setComputeBrightness(computeBrightness_);
+
   LOG_INFO("using spinnaker lib version: " + driver_->getLibraryVersion());
   const auto camList = driver_->getSerialNumbers();
   if (camList.empty()) {
@@ -468,8 +534,11 @@ bool CameraDriver::start()
       std::string nm = driver_->getNodeMapAsString();
       std::cout << nm;
     }
-    startCamera();  // TODO: once ROS2 supports subscriber status callbacks, this can go!
+    // Must first create the camera parameters before acquisition is started.
+    // Some parameters (like blackfly s chunk control) cannot be set once
+    // the camera is running.
     createCameraParameters();
+    startCamera();  // TODO: once ROS2 supports subscriber status callbacks, this can go!
   } else {
     LOG_ERROR("init camera failed for cam: " << serial_);
   }

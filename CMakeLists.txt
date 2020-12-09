@@ -24,9 +24,12 @@ set(ROS2_DEPENDENCIES
   "rclcpp"
   "rclcpp_components"
   "sensor_msgs"
+  "std_msgs"
   "camera_info_manager"
   "image_transport"
   "flir_spinnaker_common"
+  "image_meta_msgs_ros2"
+  "camera_control_msgs_ros2"
 )
 
 # find dependencies
@@ -52,9 +55,19 @@ rclcpp_components_register_nodes(camera_driver "flir_spinnaker_ros2::CameraDrive
 
 target_include_directories(camera_driver PRIVATE include)
 
+# the node must go into the project specific lib directory or else
+# the launch file will not find it
+
+install(TARGETS
+  camera_driver_node
+  DESTINATION lib/${PROJECT_NAME}/
+  )
+
+# the shared library goes into the global lib dir so it can
+# be used as a composable node by other projects
+
 install(TARGETS
   camera_driver
-  camera_driver_node
   DESTINATION lib
 )
 
