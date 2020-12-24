@@ -116,6 +116,7 @@ bool CameraDriver::stop()
   keepRunning_ = false;
   if (thread_) {
     thread_->join();
+    thread_ = 0;
   }
   return (true);
 }
