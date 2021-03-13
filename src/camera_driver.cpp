@@ -411,6 +411,22 @@ void CameraDriver::run()
   }
 }
 
+static std::string flir_to_ros_encoding(
+  const flir_spinnaker_common::pixel_format::PixelFormat & pf)
+{
+  switch (pf) {
+    case flir_spinnaker_common::pixel_format::BayerRG8:
+      return (sensor_msgs::image_encodings::BAYER_RGGB8);
+      break;
+    case flir_spinnaker_common::pixel_format::Mono8:
+      return (sensor_msgs::image_encodings::MONO8);
+      break;
+    case flir_spinnaker_common::pixel_format::INVALID:
+    default:
+      return ("INVALID");
+  }
+}
+
 void CameraDriver::doPublish(const ImageConstPtr & im)
 {
   // todo: honor the encoding in the image
@@ -418,8 +434,7 @@ void CameraDriver::doPublish(const ImageConstPtr & im)
   imageMsg_.header.stamp = t;
   cameraInfoMsg_.header.stamp = t;
 
-  const std::string encoding =
-    sensor_msgs::image_encodings::BAYER_RGGB8;  // looks good
+  const std::string encoding = flir_to_ros_encoding(im->pixelFormat_);
 
   sensor_msgs::msg::Image::UniquePtr img(
     new sensor_msgs::msg::Image(imageMsg_));
