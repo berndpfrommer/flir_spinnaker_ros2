@@ -9,7 +9,7 @@ camera_params = {
     'compute_brightness': False,
     'dump_node_map': False,
     # set parameters defined in grasshopper.cfg    
-    'gain_auto': 'Continous',
+    'gain_auto': 'Continuous',
     'exposure_auto': 'Continuous',
     'frame_rate_auto': 'Off',
     'frame_rate': 100.0,
