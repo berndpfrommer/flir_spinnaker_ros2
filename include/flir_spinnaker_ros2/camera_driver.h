@@ -108,6 +108,10 @@ private:
   std::vector<std::string> parameterList_;  // remember original ordering
   rclcpp::Subscription<camera_control_msgs_ros2::msg::CameraControl>::SharedPtr
     controlSub_;
+  uint32_t publishedCount_{0};
+  uint32_t droppedCount_{0};
+  rclcpp::Time lastStatusTime_;
+  int qosDepth_{4};
 };
 }  // namespace flir_spinnaker_ros2
 #endif  // FLIR_SPINNAKER_ROS2__CAMERA_DRIVER_H_

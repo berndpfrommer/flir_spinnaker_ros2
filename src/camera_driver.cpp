@@ -88,6 +88,7 @@ CameraDriver::NodeInfo::NodeInfo(
 CameraDriver::CameraDriver(const rclcpp::NodeOptions & options)
 : Node("cam_sync", options)
 {
+  lastStatusTime_ = now();
   statusTimer_ = rclcpp::create_timer(
     this, get_clock(), rclcpp::Duration(5, 0),
     std::bind(&CameraDriver::printStatus, this));
@@ -133,8 +134,18 @@ bool CameraDriver::stopCamera()
 void CameraDriver::printStatus()
 {
   if (driver_) {
+    const double dropRate = (publishedCount_ > 0) ?
+      ((double)droppedCount_ / (double)publishedCount_) : 0;
+    const rclcpp::Time t = now();
+    const rclcpp::Duration dt = t - lastStatusTime_;
+    double dtns = std::max(dt.nanoseconds(), (int64_t)1);
+    double outRate = publishedCount_ * 1e9 / dtns;
     LOG_INFO(
-      "incoming frame rate: " << driver_->getReceiveFrameRate() << " Hz");
+      "frame rate in: " << driver_->getReceiveFrameRate() << " Hz, out:"
+      << outRate << " Hz, drop: " << dropRate * 100 << "%");
+    lastStatusTime_ = t;
+    droppedCount_ = 0;
+    publishedCount_ = 0;
   } else {
     LOG_WARN("camera " << serial_ << " is not online!");
   }
@@ -156,6 +167,7 @@ void CameraDriver::readParameters()
   cameraInfoURL_ = this->declare_parameter<std::string>("camerainfo_url", "");
   frameId_ = this->declare_parameter<std::string>("frame_id", get_name());
   dumpNodeMap_ = this->declare_parameter<bool>("dump_node_map", false);
+  qosDepth_ = this->declare_parameter<int>("image_queue_size", 4);
   computeBrightness_ =
     this->declare_parameter<bool>("compute_brightness", false);
   parameterFile_ =
@@ -383,6 +395,8 @@ void CameraDriver::publishImage(const ImageConstPtr & im)
     if (imageQueue_.size() < 2) {
       imageQueue_.push_back(im);
       cv_.notify_all();
+    } else {
+      droppedCount_++;
     }
   }
 }
@@ -436,19 +450,24 @@ void CameraDriver::doPublish(const ImageConstPtr & im)
 
   const std::string encoding = flir_to_ros_encoding(im->pixelFormat_);
 
-  sensor_msgs::msg::Image::UniquePtr img(
-    new sensor_msgs::msg::Image(imageMsg_));
-  sensor_msgs::msg::CameraInfo::UniquePtr cinfo(
-    new sensor_msgs::msg::CameraInfo(cameraInfoMsg_));
-  // will make deep copy. Do we need to? Probably...
-  bool ret = sensor_msgs::fillImage(
-    *img, encoding, im->height_, im->width_, im->stride_, im->data_);
-  if (!ret) {
-    LOG_ERROR("fill image failed!");
-  } else {
-    //const auto t0 = this->now();
-    pub_.publish(std::move(img), std::move(cinfo));
-    if (metaPub_->get_subscription_count() != 0) {
+  if (pub_.getNumSubscribers() > 0) {
+    sensor_msgs::msg::CameraInfo::UniquePtr
+      cinfo(new sensor_msgs::msg::CameraInfo(cameraInfoMsg_));
+    // will make deep copy. Do we need to? Probably...
+    sensor_msgs::msg::Image::UniquePtr img(new sensor_msgs::msg::Image(imageMsg_));
+    bool ret = sensor_msgs::fillImage(*img, encoding, im->height_,
+				      im->width_, im->stride_, im->data_);
+    if (!ret) {
+      LOG_ERROR("fill image failed!");
+    } else {
+      //const auto t0 = this->now();
+      pub_.publish(std::move(img), std::move(cinfo));
+      //const auto t1 = this->now();
+      //std::cout << "dt: " << (t1 - t0).nanoseconds() * 1e-9 << std::endl;
+      publishedCount_++;
+    }
+  }
+  if (metaPub_->get_subscription_count() != 0) {
       metaMsg_.header.stamp = t;
       metaMsg_.brightness = im->brightness_;
       metaMsg_.exposure_time = im->exposureTime_;
@@ -456,9 +475,6 @@ void CameraDriver::doPublish(const ImageConstPtr & im)
       metaMsg_.gain = im->gain_;
       metaMsg_.camera_time = im->imageTime_;
       metaPub_->publish(metaMsg_);
-    }
-    //const auto t1 = this->now();
-    //std::cout << "dt: " << (t1 - t0).nanoseconds() * 1e-9 << std::endl;
   }
 }
 
@@ -506,7 +522,7 @@ bool CameraDriver::start()
 
   rmw_qos_profile_t qosProf = rmw_qos_profile_default;
   qosProf.history = RMW_QOS_POLICY_HISTORY_KEEP_LAST;
-  qosProf.depth = 1;  // keep at most one image
+  qosProf.depth = qosDepth_;  // keep at most this number of images
 
   qosProf.reliability = RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT;
   //qosProf.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
