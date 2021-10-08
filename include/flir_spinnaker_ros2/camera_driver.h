@@ -86,6 +86,7 @@ private:
   double exposureTime_;  // in microseconds
   bool autoExposure_;    // if auto exposure is on/off
   bool dumpNodeMap_{false};
+  bool alwaysPublish_{false};
   bool debug_{false};
   bool computeBrightness_{false};
   uint32_t currentExposureTime_{0};
