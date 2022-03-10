@@ -166,6 +166,7 @@ void CameraDriver::readParameters()
   LOG_INFO("debug: " << debug_);
   cameraInfoURL_ = this->declare_parameter<std::string>("camerainfo_url", "");
   frameId_ = this->declare_parameter<std::string>("frame_id", get_name());
+  alwaysPublish_ = this->declare_parameter<bool>("always_publish", false);
   dumpNodeMap_ = this->declare_parameter<bool>("dump_node_map", false);
   qosDepth_ = this->declare_parameter<int>("image_queue_size", 4);
   computeBrightness_ =
@@ -450,7 +451,7 @@ void CameraDriver::doPublish(const ImageConstPtr & im)
 
   const std::string encoding = flir_to_ros_encoding(im->pixelFormat_);
 
-  if (pub_.getNumSubscribers() > 0) {
+  if (pub_.getNumSubscribers() > 0 || alwaysPublish_) {
     sensor_msgs::msg::CameraInfo::UniquePtr
       cinfo(new sensor_msgs::msg::CameraInfo(cameraInfoMsg_));
     // will make deep copy. Do we need to? Probably...
@@ -467,7 +468,7 @@ void CameraDriver::doPublish(const ImageConstPtr & im)
       publishedCount_++;
     }
   }
-  if (metaPub_->get_subscription_count() != 0) {
+  if (metaPub_->get_subscription_count() != 0 || alwaysPublish_) {
       metaMsg_.header.stamp = t;
       metaMsg_.brightness = im->brightness_;
       metaMsg_.exposure_time = im->exposureTime_;

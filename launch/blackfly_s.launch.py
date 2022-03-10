@@ -11,8 +11,10 @@ camera_params = {
     # set parameters defined in grasshopper.cfg    
     'gain_auto': 'Continuous',
     'exposure_auto': 'Continuous',
+    'always_publish': True,
     'frame_rate_auto': 'Off',
-    'frame_rate': 100.0,
+    'frame_rate': 20.0,
+    'frame_rate_enable': True,
     'trigger_mode': 'Off',
     'chunk_mode_active': True,
     'chunk_selector_frame_id': 'FrameID',
