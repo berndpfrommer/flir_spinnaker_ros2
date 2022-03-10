@@ -1,0 +1,1 @@
+- git: {local-name: flir_spinnaker_common, uri: 'git@github.com:berndpfrommer/flir_spinnaker_common.git', version: 'master'}
