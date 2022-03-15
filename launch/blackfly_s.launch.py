@@ -8,7 +8,7 @@ camera_params = {
     'debug': False,
     'compute_brightness': False,
     'dump_node_map': False,
-    # set parameters defined in grasshopper.cfg    
+    # set parameters defined in blackfly_s.cfg    
     'gain_auto': 'Continuous',
     'exposure_auto': 'Continuous',
     'always_publish': True,
@@ -28,7 +28,7 @@ camera_params = {
     }
 
 def generate_launch_description():
-    """launch grasshopper camera node."""
+    """launch blackfly_s camera node."""
     flir_dir = get_package_share_directory('flir_spinnaker_ros2')
     config_dir = flir_dir + '/config/'
     name_arg = LaunchArg('camera_name', default_value='blackfly_s',
