@@ -23,11 +23,25 @@
 #include <rclcpp_components/register_node_macro.hpp>
 #include <sensor_msgs/fill_image.hpp>
 #include <sensor_msgs/image_encodings.hpp>
+#include <type_traits>
 
 #include "logging.h"
 
 namespace flir_spinnaker_ros2
 {
+//
+// detect interface changes between foxy and galactic
+//
+template <typename T, typename = void>
+struct has_dynamic_typing : std::false_type
+{
+};
+
+template <typename T>
+struct has_dynamic_typing<T, decltype((void)T::dynamic_typing, void())>
+: std::true_type
+{
+};
 static rcl_interfaces::msg::ParameterDescriptor make_desc(
   const std::string name, int type)
 {
@@ -35,6 +49,9 @@ static rcl_interfaces::msg::ParameterDescriptor make_desc(
   desc.name = name;
   desc.type = type;
   desc.description = name;
+  if (has_dynamic_typing<rcl_interfaces::msg::ParameterDescriptor>()) {
+    desc.dynamic_typing = true;
+  }
   return (desc);
 }
 
@@ -134,15 +151,16 @@ bool CameraDriver::stopCamera()
 void CameraDriver::printStatus()
 {
   if (driver_) {
-    const double dropRate = (publishedCount_ > 0) ?
-      ((double)droppedCount_ / (double)publishedCount_) : 0;
+    const double dropRate =
+      (publishedCount_ > 0) ? ((double)droppedCount_ / (double)publishedCount_)
+                            : 0;
     const rclcpp::Time t = now();
     const rclcpp::Duration dt = t - lastStatusTime_;
     double dtns = std::max(dt.nanoseconds(), (int64_t)1);
     double outRate = publishedCount_ * 1e9 / dtns;
     LOG_INFO(
       "frame rate in: " << driver_->getReceiveFrameRate() << " Hz, out:"
-      << outRate << " Hz, drop: " << dropRate * 100 << "%");
+                        << outRate << " Hz, drop: " << dropRate * 100 << "%");
     lastStatusTime_ = t;
     droppedCount_ = 0;
     publishedCount_ = 0;
@@ -452,12 +470,13 @@ void CameraDriver::doPublish(const ImageConstPtr & im)
   const std::string encoding = flir_to_ros_encoding(im->pixelFormat_);
 
   if (pub_.getNumSubscribers() > 0 || alwaysPublish_) {
-    sensor_msgs::msg::CameraInfo::UniquePtr
-      cinfo(new sensor_msgs::msg::CameraInfo(cameraInfoMsg_));
+    sensor_msgs::msg::CameraInfo::UniquePtr cinfo(
+      new sensor_msgs::msg::CameraInfo(cameraInfoMsg_));
     // will make deep copy. Do we need to? Probably...
-    sensor_msgs::msg::Image::UniquePtr img(new sensor_msgs::msg::Image(imageMsg_));
-    bool ret = sensor_msgs::fillImage(*img, encoding, im->height_,
-				      im->width_, im->stride_, im->data_);
+    sensor_msgs::msg::Image::UniquePtr img(
+      new sensor_msgs::msg::Image(imageMsg_));
+    bool ret = sensor_msgs::fillImage(
+      *img, encoding, im->height_, im->width_, im->stride_, im->data_);
     if (!ret) {
       LOG_ERROR("fill image failed!");
     } else {
@@ -469,13 +488,13 @@ void CameraDriver::doPublish(const ImageConstPtr & im)
     }
   }
   if (metaPub_->get_subscription_count() != 0 || alwaysPublish_) {
-      metaMsg_.header.stamp = t;
-      metaMsg_.brightness = im->brightness_;
-      metaMsg_.exposure_time = im->exposureTime_;
-      metaMsg_.max_exposure_time = im->maxExposureTime_;
-      metaMsg_.gain = im->gain_;
-      metaMsg_.camera_time = im->imageTime_;
-      metaPub_->publish(metaMsg_);
+    metaMsg_.header.stamp = t;
+    metaMsg_.brightness = im->brightness_;
+    metaMsg_.exposure_time = im->exposureTime_;
+    metaMsg_.max_exposure_time = im->maxExposureTime_;
+    metaMsg_.gain = im->gain_;
+    metaMsg_.camera_time = im->imageTime_;
+    metaPub_->publish(metaMsg_);
   }
 }
 
