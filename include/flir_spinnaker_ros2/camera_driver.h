@@ -62,6 +62,7 @@ private:
   void setParameter(const NodeInfo & ni, const rclcpp::Parameter & p);
   bool setEnum(const std::string & nodeName, const std::string & v = "");
   bool setDouble(const std::string & nodeName, double v);
+  bool setInt(const std::string & nodeName, int v);
   bool setBool(const std::string & nodeName, bool v);
   bool readParameterFile();
 

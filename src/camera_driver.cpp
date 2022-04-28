@@ -279,6 +279,24 @@ bool CameraDriver::setDouble(const std::string & nodeName, double v)
   return (status);
 }
 
+bool CameraDriver::setInt(const std::string & nodeName, int v)
+{
+  LOG_INFO("setting " << nodeName << " to: " << v);
+  int retV;  // what actually was set
+  std::string msg = driver_->setInt(nodeName, v, &retV);
+  bool status(true);
+  if (msg != "OK") {
+    LOG_WARN("setting " << nodeName << " failed: " << msg);
+    status = false;
+  }
+  if (v != retV) {
+    LOG_WARN(nodeName << " set to: " << retV << " instead of: " << v);
+    status = false;
+  }
+  return (status);
+}
+
+
 bool CameraDriver::setBool(const std::string & nodeName, bool v)
 {
   LOG_INFO("setting " << nodeName << " to: " << v);
@@ -313,6 +331,15 @@ void CameraDriver::setParameter(
         setDouble(ni.name, bd.second);
       } else {
         LOG_WARN("bad non-float " << p.get_name() << " type: " << p.get_type());
+      }
+      break;
+    }
+    case NodeInfo::INT: {
+      auto bd = get_double_int_param(p);
+      if (bd.first) {
+        setInt(ni.name, bd.second);
+      } else {
+        LOG_WARN("bad non-int " << p.get_name() << " type: " << p.get_type());
       }
       break;
     }
