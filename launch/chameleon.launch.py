@@ -11,6 +11,7 @@ camera_params = {
     # set parameters defined in chameleon.cfg    
     'gain_auto': 'Continuous',
     'exposure_auto': 'Continuous',
+    'pixel_format': 'RGB8', # 'BayerRG8, 'RGB8' or 'Mono8'
     'frame_rate_continous': True,
     'frame_rate': 100.0,
     'trigger_mode': 'Off',

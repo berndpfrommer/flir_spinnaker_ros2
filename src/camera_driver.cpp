@@ -450,6 +450,9 @@ static std::string flir_to_ros_encoding(
     case flir_spinnaker_common::pixel_format::BayerRG8:
       return (sensor_msgs::image_encodings::BAYER_RGGB8);
       break;
+    case flir_spinnaker_common::pixel_format::RGB8:
+      return (sensor_msgs::image_encodings::RGB8);
+      break;
     case flir_spinnaker_common::pixel_format::Mono8:
       return (sensor_msgs::image_encodings::MONO8);
       break;
