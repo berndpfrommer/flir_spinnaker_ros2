@@ -9,9 +9,11 @@ for flavor in "${flavors[@]}"
 do
     if [[ -f "/opt/ros/${flavor}/setup.bash" ]]; then
 	source /opt/ros/${flavor}/setup.bash
+	break
     fi
 done
 
+echo "found ros version: ${ROS_VERSION} distro: ${ROS_DISTRO}"
 # run wstool to bring in the additional repositories required
 wstool init src ./src/flir_spinnaker_ros2/flir_spinnaker_ros2.rosinstall
 
