@@ -1,14 +1,16 @@
 #!/bin/bash
 # set up ROS
-flavors=('foxy', 'galactic', 'humble')
+distros=('foxy', 'galactic')
 
 #
-# probe for the ROS2 flavor
+# probe for the ROS2 distro
 #
-for flavor in "${flavors[@]}"
+ls -la /opt/ros
+
+for distro in "${distros[@]}"
 do
-    if [[ -f "/opt/ros/${flavor}/setup.bash" ]]; then
-	source /opt/ros/${flavor}/setup.bash
+    if [[ -f "/opt/ros/${distro}/setup.bash" ]]; then
+	source /opt/ros/${distro}/setup.bash
 	break
     fi
 done
