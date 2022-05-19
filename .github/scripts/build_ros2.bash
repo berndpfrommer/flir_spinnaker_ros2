@@ -9,12 +9,14 @@ do
     fi
 done
 
-# make workspace
-mkdir -p ../ws/src
-cd ../ws
+ls -la
+find .
+cd ..
+ls -la
+cd ..
 
-# link source into catkin workspace
-ln -s $src_dir src/apriltag
+# run wstool to bring in the additional repositories required
+wstool init src src/flir_spinnaker_ros2/flir_spinnaker_ros2.rosinstall
 
 # build
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
