@@ -1,0 +1,22 @@
+name: build repo
+
+on:
+ push:
+    branches: [ $default-branch ]
+ pull_request:
+    branches: [ $default-branch ]
+
+jobs:
+  build_focal_ros2:
+    runs-on: ubuntu-20.04
+    container:
+      image: berndpfrommer/focal_noetic_galactic_build
+    name: build repo under ROS2 from source on focal
+    steps:
+      - name: check out github repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: compile from source
+        run: git checkout master && ./.github/scripts/build_ros2.bash
+  
