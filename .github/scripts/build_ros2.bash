@@ -11,12 +11,10 @@ done
 
 ls -la
 find .
-cd ..
-ls -la
-cd ..
+pwd
 
 # run wstool to bring in the additional repositories required
-wstool init src src/flir_spinnaker_ros2/flir_spinnaker_ros2.rosinstall
+wstool init src ./src/flir_spinnaker_ros2/flir_spinnaker_ros2.rosinstall
 
 # build
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
