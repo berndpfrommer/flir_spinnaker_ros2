@@ -1,12 +1,10 @@
 #!/bin/bash
 # set up ROS
-distros=('foxy', 'galactic')
+distros=('foxy' 'galactic' 'humble')
 
 #
 # probe for the ROS2 distro
 #
-ls -la /opt/ros
-
 for distro in "${distros[@]}"
 do
     if [[ -f "/opt/ros/${distro}/setup.bash" ]]; then
