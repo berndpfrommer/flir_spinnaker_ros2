@@ -1,6 +1,6 @@
 #!/bin/bash
 # set up ROS
-flavors=('foxy', 'galactic')
+flavors=('foxy', 'galactic', 'humble')
 
 #
 # probe for the ROS2 flavor
