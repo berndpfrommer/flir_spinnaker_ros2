@@ -56,6 +56,13 @@ wstool init src src/flir_spinnaker_ros2/flir_spinnaker_ros2.rosinstall
 # wstool merge -t src src/flir_spinnaker_ros2/flir_spinnaker_ros2.rosinstall
 # wstool update -t src
 ```
+
+To automatically install all packages that the ``flir_spinnaker_ros2``
+depends upon, run this at the top of your workspace:
+```
+rosdep install --from-paths src --ignore-src
+```
+
 3) Build the driver and source the workspace:
 ```
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
