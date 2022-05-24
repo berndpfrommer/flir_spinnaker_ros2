@@ -25,6 +25,9 @@ Software:
 - Spinnaker 2.6.0.157 (other versions may work as well but this is
   what the continuous integration builds are using)
 
+The code compiles under Ubuntu 22.04 / Humble but has not been tested
+yet with real hardware.
+
 # Features
 
 Basic features are supported like setting exposure, gain, and external

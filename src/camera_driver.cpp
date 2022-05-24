@@ -228,7 +228,7 @@ bool CameraDriver::readParameterFile()
 
 void CameraDriver::createCameraParameters()
 {
-  for (const auto name : parameterList_) {
+  for (const auto & name : parameterList_) {
     const auto it = parameterMap_.find(name);
     if (it != parameterMap_.end()) {
       const auto & ni = it->second;  // should always succeed
@@ -601,7 +601,7 @@ bool CameraDriver::start()
   }
   if (std::find(camList.begin(), camList.end(), serial_) == camList.end()) {
     LOG_ERROR("no camera found with serial number:" << serial_);
-    for (const auto cam : camList) {
+    for (const auto & cam : camList) {
       LOG_WARN("found cameras: " << cam);
     }
     return (false);
