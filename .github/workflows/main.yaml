@@ -26,3 +26,17 @@ jobs:
       - name: compile from source
         run: ./src/flir_spinnaker_ros2/.github/scripts/build_ros2.bash
   
+  build_jammy_ros2:
+    runs-on: ubuntu-22.04
+    container:
+      image: berndpfrommer/jammy_humble_spinnaker
+    name: build repo under ROS2 from source on jammy
+    steps:
+      - name: check out github repo
+        uses: actions/checkout@v3
+        with:
+          path: src/flir_spinnaker_ros2
+          fetch-depth: 0
+      - name: compile from source
+        run: ./src/flir_spinnaker_ros2/.github/scripts/build_ros2.bash
+  
