@@ -5,7 +5,7 @@ SDK](http://softwareservices.flir.com/Spinnaker/latest/index.htmlspinnaker).
 
 NOTE: This driver is not written or supported by FLIR.
 
-# Tested cameras:
+## Tested cameras:
 
 The following cameras have been tested:
 
@@ -28,7 +28,7 @@ Software:
 The code compiles under Ubuntu 22.04 / Humble but has not been tested
 yet with real hardware.
 
-# Features
+## Features
 
 Basic features are supported like setting exposure, gain, and external
 triggering. It's straight forward to support new camera types and features by
@@ -37,7 +37,7 @@ formats you may not have to modify any source code. The code is meant
 to be a thin wrapper for setting the features available in FLIR's
 SpinView program.
 
-# How to build
+## How to build
 
 1) Install the FLIR spinnaker driver.
 2) Prepare the ROS2 driver build:
@@ -72,14 +72,14 @@ colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -D
 . install/setup.bash
 ```
 
-# Example usage
+## Example usage
 
 How to launch the example file:
 ```
 ros2 launch flir_spinnaker_ros2 blackfly_s.launch.py camera_name:=blackfly_0 serial:="'20435008'"
 ```
 
-# Setting up GigE cameras
+## Setting up GigE cameras
 
 The Spinnaker SDK abstracts away the transport layer so a GigE camera
 should work the same way as USB3: you point it to the serial
@@ -119,3 +119,20 @@ For more tips on GigE setup look at FLIR's support pages
 [here](https://www.flir.com/support-center/iis/machine-vision/knowledge-base/lost-ethernet-data-packets-on-linux-systems/)
 and
 [here](https://www.flir.com/support-center/iis/machine-vision/application-note/troubleshooting-image-consistency-errors/).
+
+## How to contribute
+Please provide feedback if you cannot get your camera working or if
+the code does not compile for you. Feedback is crucial for the
+software development process.
+
+Bug fixes and config files for new cameras are greatly
+appreciated. Before submitting a pull request, run this to see if your
+commit passes some basic lint tests:
+```
+colcon test --packages-select flir_spinnaker_ros2 && colcon test-result --verbose
+```
+
+
+## License
+
+This software is issued under the Apache License Version 2.0.

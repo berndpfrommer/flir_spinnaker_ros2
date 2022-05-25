@@ -63,7 +63,7 @@ static std::pair<bool, double> get_double_int_param(const rclcpp::Parameter & p)
     bd.first = true;
   }
   if (p.get_type() == rclcpp::PARAMETER_INTEGER) {
-    bd.second = (double)p.as_int();
+    bd.second = static_cast<double>(p.as_int());
     bd.first = true;
   }
   return (bd);
@@ -77,7 +77,7 @@ static std::pair<bool, bool> get_bool_int_param(const rclcpp::Parameter & p)
     bb.first = true;
   }
   if (p.get_type() == rclcpp::PARAMETER_INTEGER) {
-    bb.second = (bool)p.as_int();
+    bb.second = static_cast<bool>(p.as_int());
     bb.first = true;
   }
   return (bb);
@@ -151,9 +151,10 @@ bool CameraDriver::stopCamera()
 void CameraDriver::printStatus()
 {
   if (driver_) {
-    const double dropRate =
-      (publishedCount_ > 0) ? ((double)droppedCount_ / (double)publishedCount_)
-                            : 0;
+    const double dropRate = (publishedCount_ > 0)
+                              ? (static_cast<double>(droppedCount_) /
+                                 static_cast<double>(publishedCount_))
+                              : 0;
     const rclcpp::Time t = now();
     const rclcpp::Duration dt = t - lastStatusTime_;
     double dtns = std::max(dt.nanoseconds(), (int64_t)1);
@@ -296,7 +297,6 @@ bool CameraDriver::setInt(const std::string & nodeName, int v)
   return (status);
 }
 
-
 bool CameraDriver::setBool(const std::string & nodeName, bool v)
 {
   LOG_INFO("setting " << nodeName << " to: " << v);
@@ -371,7 +371,6 @@ rcl_interfaces::msg::SetParametersResult CameraDriver::parameterChanged(
     }
     const NodeInfo & ni = it->second;
     if (p.get_type() == rclcpp::PARAMETER_NOT_SET) {
-      //LOG_INFO("not setting unset param: " << ni.name);
       continue;
     }
     try {
@@ -509,10 +508,10 @@ void CameraDriver::doPublish(const ImageConstPtr & im)
     if (!ret) {
       LOG_ERROR("fill image failed!");
     } else {
-      //const auto t0 = this->now();
+      // const auto t0 = this->now();
       pub_.publish(std::move(img), std::move(cinfo));
-      //const auto t1 = this->now();
-      //std::cout << "dt: " << (t1 - t0).nanoseconds() * 1e-9 << std::endl;
+      // const auto t1 = this->now();
+      // std::cout << "dt: " << (t1 - t0).nanoseconds() * 1e-9 << std::endl;
       publishedCount_++;
     }
   }
@@ -574,10 +573,10 @@ bool CameraDriver::start()
   qosProf.depth = qosDepth_;  // keep at most this number of images
 
   qosProf.reliability = RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT;
-  //qosProf.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
+  // qosProf.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
 
-  //qosProf.durability = RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL;
-  //qosProf.durability = RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT;
+  // qosProf.durability = RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL;
+  // qosProf.durability = RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT;
   qosProf.durability =
     RMW_QOS_POLICY_DURABILITY_VOLATILE;  // sender does not have to store
   qosProf.deadline.sec = 5;              // max expect time between msgs pub
@@ -619,7 +618,8 @@ bool CameraDriver::start()
     // Some parameters (like blackfly s chunk control) cannot be set once
     // the camera is running.
     createCameraParameters();
-    startCamera();  // TODO: once ROS2 supports subscriber status callbacks, this can go!
+    // TODO(bernd): once ROS2 supports subscriber status callbacks, this can go!
+    startCamera();
   } else {
     LOG_ERROR("init camera failed for cam: " << serial_);
   }

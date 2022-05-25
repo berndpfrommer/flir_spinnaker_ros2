@@ -19,19 +19,19 @@
 
 namespace flir_spinnaker_ros2
 {
-  class Camera
-  {
+class Camera
+{
 public:
-    explicit Camera(const std::string & serial);
+  explicit Camera(const std::string & serial);
 
 private:
-    std::string void readParameters();
-    // ----- variables --
-    std::shared_ptr < rclcpp::Node > node_;
-    image_transport::CameraPublisher pub_;
-    std::shared_ptr < flir_spinnaker_common::Driver > driver_;
-    std::shared_ptr < camera_info_manager::CameraInfoManager > infoManager_;
-  };
+  std::string void readParameters();
+  // ----- variables --
+  std::shared_ptr<rclcpp::Node> node_;
+  image_transport::CameraPublisher pub_;
+  std::shared_ptr<flir_spinnaker_common::Driver> driver_;
+  std::shared_ptr<camera_info_manager::CameraInfoManager> infoManager_;
+};
 }  // namespace flir_spinnaker_ros2
 
 #endif  // FLIR_SPINNAKER_ROS2__CAMERA_H_

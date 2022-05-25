@@ -1,7 +1,25 @@
+# -----------------------------------------------------------------------------
+# Copyright 2022 Bernd Pfrommer <bernd.pfrommer@gmail.com>
 #
-# example file for launching a free running grasshopper with external camera control
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-import launch
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#
+
+#
+# example file for launching a free running grasshopper with external
+# exposure control
+#
+
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration as LaunchConfig
 from launch.actions import DeclareLaunchArgument as LaunchArg
@@ -13,7 +31,7 @@ camera_params = {
     'debug': False,
     'compute_brightness': True,
     'dump_node_map': False,
-# set parameters defined in grasshopper.cfg    
+    # set parameters defined in grasshopper.cfg
     'gain_auto': 'Off',
     'gain': 5.0,
     'exposure_auto': 'Off',
@@ -32,20 +50,20 @@ camera_params = {
     'chunk_enable_timestamp': True,
     }
 
+
 def generate_launch_description():
-    """launch grasshopper camera node."""
+    """Launch camera node."""
     flir_dir = get_package_share_directory('flir_spinnaker_ros2')
-    config_dir = get_package_share_directory('flir_spinnaker_ros2') + '/config/'
+    config_dir = flir_dir + '/config/'
     launch_arg = LaunchArg('camera_name', default_value='grasshopper',
                            description='camera name')
-    cam_name = LaunchConfig('camera_name')
     node = Node(package='flir_spinnaker_ros2',
                 executable='camera_driver_node',
                 output='screen',
                 name=LaunchConfig('camera_name'),
                 parameters=[camera_params,
-                        {'parameter_file': config_dir + 'grasshopper.cfg'}],
-                remappings=[('~/control', '/exposure_control/control'),],
+                            {'parameter_file': config_dir +
+                             'grasshopper.cfg'}],
+                remappings=[('~/control', '/exposure_control/control'), ])
 
-    )
     return LaunchDescription([launch_arg, node])
