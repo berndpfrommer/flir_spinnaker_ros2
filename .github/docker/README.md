@@ -32,8 +32,8 @@ yes | sudo dpkg -i libspinnaker_*.deb
 
 Build and push image with remaining packages:
 ```
-docker build -t ${dockerhub_name}/${combined}_build -f Dockerfile.${combined}_build .
-docker push ${dockerhub_name}/${combined}_build
+docker build -t ${dockerhub_name}/${combined}_spinnaker -f Dockerfile.${combined}_spinnaker .
+docker push ${dockerhub_name}/${combined}_spinnaker
 ```
 
 

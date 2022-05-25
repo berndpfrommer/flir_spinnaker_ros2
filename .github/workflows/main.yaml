@@ -15,7 +15,7 @@ jobs:
   build_focal_ros2:
     runs-on: ubuntu-20.04
     container:
-      image: berndpfrommer/focal_noetic_galactic_build
+      image: berndpfrommer/focal_noetic_galactic_spinnaker
     name: build under focal / galactic
     steps:
       - name: check out github repo
