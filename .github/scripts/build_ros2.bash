@@ -19,8 +19,7 @@ wstool init src ./src/flir_spinnaker_ros2/flir_spinnaker_ros2.rosinstall
 
 apt list --installed | grep -i 'ament-clang-format'
 
-# build
-colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
+# build and test
+colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo && colcon test && colcon test-result --verbose
 
-# test
-colcon test && colcon test-result --verbose
+
