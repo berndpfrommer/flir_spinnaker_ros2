@@ -17,6 +17,8 @@ echo "found ros version: ${ROS_VERSION} distro: ${ROS_DISTRO}"
 # run wstool to bring in the additional repositories required
 wstool init src ./src/flir_spinnaker_ros2/flir_spinnaker_ros2.rosinstall
 
+apt list --installed | grep -i 'ament-clang-format'
+
 # build
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
 
