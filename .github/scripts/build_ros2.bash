@@ -19,3 +19,6 @@ wstool init src ./src/flir_spinnaker_ros2/flir_spinnaker_ros2.rosinstall
 
 # build
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+# test
+colcon test && colcon test-result --verbose
