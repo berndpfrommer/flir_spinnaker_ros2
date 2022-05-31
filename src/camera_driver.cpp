@@ -212,7 +212,7 @@ bool CameraDriver::readParameterFile()
       tokens.push_back(s);
     }
     if (!tokens.empty()) {
-      if (tokens[0] == "#") {
+      if (!tokens[0].empty() && tokens[0][0] == '#') {
         continue;
       }
       if (tokens.size() != 3) {
