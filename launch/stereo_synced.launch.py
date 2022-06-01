@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# Copyright 2020 Bernd Pfrommer <bernd.pfrommer@gmail.com>
+# Copyright 2022 Bernd Pfrommer <bernd.pfrommer@gmail.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# example launch file for frontend
 #
 
 import launch
@@ -51,10 +50,11 @@ camera_params = {
     'chunk_enable_timestamp': True,
     }
 
+
 def generate_launch_description():
-    """create synchronized stereo camera."""
+    """Create synchronized stereo camera."""
     flir_dir = get_package_share_directory('flir_spinnaker_ros2')
-    config_dir = get_package_share_directory('flir_spinnaker_ros2') + '/config/'
+    config_dir = flir_dir + '/config/'
     container = ComposableNodeContainer(
             name='stereo_camera_container',
             namespace='',
@@ -66,9 +66,9 @@ def generate_launch_description():
                     plugin='flir_spinnaker_ros2::CameraDriver',
                     name=LaunchConfig('cam_0_name'),
                     parameters=[camera_params,
-                        {'parameter_file': config_dir + 'blackfly_s.cfg',
-                         'serial_number': '20435008'}],
-                    remappings=[('~/control', '/exposure_control/control'),],
+                                {'parameter_file': config_dir + 'blackfly_s.cfg',
+                                 'serial_number': '20435008'}],
+                    remappings=[('~/control', '/exposure_control/control'), ],
                     extra_arguments=[{'use_intra_process_comms': True}],
                 ),
                 ComposableNode(
@@ -76,9 +76,10 @@ def generate_launch_description():
                     plugin='flir_spinnaker_ros2::CameraDriver',
                     name=LaunchConfig('cam_1_name'),
                     parameters=[camera_params,
-                        {'parameter_file': config_dir + 'blackfly_s.cfg',
-                         'serial_number': '20415937'}],
-                    remappings=[('~/control', '/exposure_control/control'),],
+                                {'parameter_file':
+                                 config_dir + 'blackfly_s.cfg',
+                                 'serial_number': '20415937'}],
+                    remappings=[('~/control', '/exposure_control/control'), ],
                     extra_arguments=[{'use_intra_process_comms': True}],
                 ),
                 ComposableNode(
@@ -97,14 +98,16 @@ def generate_launch_description():
                                  'gain_priority': False,
                                  'brightness_target': 100,
                                  'max_exposure_time': 9500.0,
-                                 'min_exposure_time': 1000.0
-                    }],
-                    remappings=[('~/meta', ['/', LaunchConfig('cam_0_name'),'/meta']),],
+                                 'min_exposure_time': 1000.0}],
+                    remappings=[('~/meta', ['/', LaunchConfig('cam_0_name'),
+                                            '/meta']), ],
                     extra_arguments=[{'use_intra_process_comms': True}],
                 ),
             ],
             output='screen',
     )
-    name_0_arg = LaunchArg('cam_0_name', default_value=['cam_0'], description='name of camera 0')
-    name_1_arg = LaunchArg('cam_1_name', default_value=['cam_1'], description='name of camera 1')
+    name_0_arg = LaunchArg('cam_0_name', default_value=['cam_0'],
+                           description='name of camera 0')
+    name_1_arg = LaunchArg('cam_1_name', default_value=['cam_1'],
+                           description='name of camera 1')
     return launch.LaunchDescription([name_0_arg, name_1_arg, container])

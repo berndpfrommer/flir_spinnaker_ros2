@@ -60,8 +60,7 @@ target_include_directories(camera_driver PRIVATE include)
 
 install(TARGETS
   camera_driver_node
-  DESTINATION lib/${PROJECT_NAME}/
-  )
+  DESTINATION lib/${PROJECT_NAME}/)
 
 # the shared library goes into the global lib dir so it can
 # be used as a composable node by other projects
@@ -80,7 +79,6 @@ install(DIRECTORY
   launch
   DESTINATION share/${PROJECT_NAME}/
 )
- 
 
 if(BUILD_TESTING)
   find_package(ament_cmake REQUIRED)
@@ -90,7 +88,7 @@ if(BUILD_TESTING)
   find_package(ament_cmake_flake8 REQUIRED)
   find_package(ament_cmake_lint_cmake REQUIRED)
   find_package(ament_cmake_pep257 REQUIRED)
-  find_package(ament_cmake_uncrustify REQUIRED)
+  find_package(ament_cmake_clang_format REQUIRED)
   find_package(ament_cmake_xmllint REQUIRED)
 
   ament_copyright()
@@ -99,7 +97,7 @@ if(BUILD_TESTING)
   ament_flake8()
   ament_lint_cmake()
   ament_pep257()
-  ament_uncrustify()
+  ament_clang_format(CONFIG_FILE .clang-format)
   ament_xmllint()
 endif()
 
