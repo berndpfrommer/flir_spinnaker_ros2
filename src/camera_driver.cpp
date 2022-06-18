@@ -30,18 +30,25 @@
 namespace flir_spinnaker_ros2
 {
 //
-// detect interface changes between foxy and galactic
-//
-template <typename T, typename = void>
-struct has_dynamic_typing : std::false_type
+// this complicated code is to detect an interface change
+// between foxy and galactic
+// See  https://stackoverflow.com/questions/1005476/
+//  how-to-detect-whether-there-is-a-specific-member-variable-in-class
+
+template <typename T, typename = bool>
+struct DescSetter
 {
+  // don't set by default (foxy)
+  static void set_dynamic_typing(T *) {}
 };
 
 template <typename T>
-struct has_dynamic_typing<T, decltype((void)T::dynamic_typing, void())>
-: std::true_type
+struct DescSetter<T, decltype((void)T::dynamic_typing, true)>
 {
+  // set if dynamic_typing is present
+  static void set_dynamic_typing(T * desc) { desc->dynamic_typing = true; }
 };
+
 static rcl_interfaces::msg::ParameterDescriptor make_desc(
   const std::string name, int type)
 {
@@ -49,9 +56,8 @@ static rcl_interfaces::msg::ParameterDescriptor make_desc(
   desc.name = name;
   desc.type = type;
   desc.description = name;
-  if (has_dynamic_typing<rcl_interfaces::msg::ParameterDescriptor>()) {
-    desc.dynamic_typing = true;
-  }
+  DescSetter<rcl_interfaces::msg::ParameterDescriptor>::set_dynamic_typing(
+    &desc);
   return (desc);
 }
 
