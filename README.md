@@ -21,7 +21,7 @@ submit a pull request with the camera config file you have created.
 Software:
 
 - Ubuntu 20.04 LTS
-- ROS2 Galactic (Foxy should work as well)
+- ROS2 Galactic and Foxy
 - Spinnaker 2.6.0.157 (other versions may work as well but this is
   what the continuous integration builds are using)
 

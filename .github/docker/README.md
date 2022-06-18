@@ -1,6 +1,6 @@
 # How to update the docker images
 
-## For galactic on Ubuntu 20.04
+## For Galactic on Ubuntu 20.04
 ### Create the base image (ROS1 and ROS2 combined)
 Change into the ``.github/docker`` directory and build the base image:
 
@@ -36,8 +36,18 @@ docker build -t ${dockerhub_name}/${combined}_spinnaker -f Dockerfile.${combined
 docker push ${dockerhub_name}/${combined}_spinnaker
 ```
 
+## For Foxy on Ubuntu 20.04
 
-## For humble on Ubuntu 22.04
+```
+dockerhub_name=<your_dockerhub_name_here>
+os_flavor=focal
+ros2_flavor=foxy
+combined=${os_flavor}_${ros2_flavor}_spinnaker
+docker build -t ${dockerhub_name}/${combined} -f Dockerfile.${combined} .
+docker push ${dockerhub_name}/${combined}
+```
+
+## For Humble on Ubuntu 22.04
 
 NOTE: at the moment the FLIR spinnaker SDK requires qt5-default, which is not present on Ubuntu 22.04.
 To create the dockerhub image, a
