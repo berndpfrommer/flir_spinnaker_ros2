@@ -120,6 +120,42 @@ For more tips on GigE setup look at FLIR's support pages
 and
 [here](https://www.flir.com/support-center/iis/machine-vision/application-note/troubleshooting-image-consistency-errors/).
 
+## Camera synchronization
+
+In the ``launch`` folder you can find a working example for launching
+drivers for two hardware synchronized Blackfly S cameras. The launch
+file requires two more packages to be installed,
+[cam_sync_ros2](https://github.com/berndpfrommer/cam_sync_ros2)(for
+time stamp syncing) and
+[exposure_control_ros2](https://github.com/berndpfrommer/exposure_control_ros2)
+(for external exposure control). See below for more details on those packages.
+
+### Time stamps
+
+When running hardware synchronized cameras in a stereo configuration
+two drivers will need to be run, one for each camera. This will mean
+however that their published ROS header time stamps are *not*
+identical which in turn may prevent down-stream ROS nodes from recognizing the
+images as being hardware synchronized. You can use the
+[cam_sync_ros2 node](https://github.com/berndpfrommer/cam_sync_ros2)
+to force the time stamps to be aligned.
+
+
+### Automatic exposure
+
+While FLIR cameras generally have built-in exposure control, in a
+synchronized setting it is sometimes desirable to also synchronize and
+completely control the auto-exposure. For instance in a stereo setup
+matching left and right image patches can be difficult when each
+camera runs its own auto exposure. The
+[exposure_control_ros2](https://github.com/berndpfrommer/exposure_control_ros2)
+package can provide external automatic exposure control. To this end
+the driver publishes
+[meta data messages](https://github.com/berndpfrommer/image_meta_msgs_ros2) and
+subscribes to 
+[camera control messages](https://github.com/berndpfrommer/camera_control_msgs_ros2).
+
+
 ## How to contribute
 Please provide feedback if you cannot get your camera working or if
 the code does not compile for you. Feedback is crucial for the
