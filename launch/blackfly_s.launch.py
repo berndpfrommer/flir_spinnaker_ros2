@@ -28,6 +28,7 @@ camera_params = {
     # set parameters defined in blackfly_s.cfg
     'gain_auto': 'Continuous',
     'exposure_auto': 'Continuous',
+    # 'device_link_throughput_limit': 380000000,
     'frame_rate_auto': 'Off',
     'frame_rate': 20.0,
     'frame_rate_enable': True,
@@ -59,6 +60,7 @@ def generate_launch_description():
                 name=[LaunchConfig('camera_name')],
                 parameters=[camera_params,
                             {'parameter_file': config_dir + 'blackfly_s.cfg',
+                             # 'dump_node_map': True,
                              'serial_number': [LaunchConfig('serial')]}],
                 remappings=[('~/control', '/exposure_control/control'), ])
 
