@@ -155,6 +155,34 @@ the driver publishes
 subscribes to 
 [camera control messages](https://github.com/berndpfrommer/camera_control_msgs_ros2).
 
+## How to add new features
+
+For lack of a more systematic way to discover the camera configuration node
+names the following procedure is recommended for adding new features:
+
+- fire up FLIR's ``spinview`` application and find the parameter you want to add
+  to the config.
+
+- start with an existing config file in the ``config`` directory, make a copy
+  and give the feature a name that follows the established convention of
+  other parameters (all lower case, separate by underscores), for example
+  ```
+    device_link_throughput_limit int "DeviceControl/DeviceLinkThroughputLimit"
+  ```
+  The parameter name is followed by the parameter type (in this example ``int``),
+  which you have to somewhat guess. If ``spinview`` shows a multiple choice drop-down box,
+  the parameter is of type ``enum``, a check box translates to ``bool``,
+  otherwise it's ``float`` or ``int`` (check what input ``spinview``) accepts.
+
+- the hard part is the node name which is the last parameter of the line, in this
+  example ``"DeviceControl/DeviceLinkThroughputLimit"``. It usually follows by
+  removing spaces from the ``spinview`` names. If that doesn't work,
+  launch the driver with the ``dump_node_map`` parameter set to "True"
+  and look at the output for inspiration.
+
+Once you have modified the config file, now just set the newly created
+parameter in the launch file, done.
+
 
 ## How to contribute
 Please provide feedback if you cannot get your camera working or if
