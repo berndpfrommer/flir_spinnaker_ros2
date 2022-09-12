@@ -15,6 +15,7 @@
 
 #include <flir_spinnaker_ros2/camera_driver.h>
 
+#include <chrono>
 #include <fstream>
 #include <functional>
 #include <image_transport/image_transport.hpp>
@@ -29,6 +30,7 @@
 
 namespace flir_spinnaker_ros2
 {
+namespace chrono = std::chrono;
 //
 // this complicated code is to detect an interface change
 // between foxy and galactic
@@ -544,7 +546,6 @@ void CameraDriver::printCameraInfo()
 void CameraDriver::startCamera()
 {
   if (!cameraRunning_) {
-    LOG_INFO("starting camera!");
     flir_spinnaker_common::Driver::Callback cb =
       std::bind(&CameraDriver::publishImage, this, std::placeholders::_1);
     cameraRunning_ = driver_->startCamera(cb);
@@ -603,15 +604,25 @@ bool CameraDriver::start()
   driver_->setAcquisitionTimeout(acquisitionTimeout_);
 
   LOG_INFO("using spinnaker lib version: " + driver_->getLibraryVersion());
-  const auto camList = driver_->getSerialNumbers();
-  if (camList.empty()) {
-    LOG_WARN("driver found no cameras!");
-  }
-  if (std::find(camList.begin(), camList.end(), serial_) == camList.end()) {
-    LOG_ERROR("no camera found with serial number:" << serial_);
-    for (const auto & cam : camList) {
-      LOG_WARN("found cameras: " << cam);
+  bool foundCamera = false;
+  for (int retry = 1; retry < 6; retry++) {
+    driver_->refreshCameraList();
+    const auto camList = driver_->getSerialNumbers();
+    if (std::find(camList.begin(), camList.end(), serial_) == camList.end()) {
+      LOG_WARN(
+        "no camera found with serial: " << serial_ << " on try # " << retry);
+      for (const auto & cam : camList) {
+        LOG_WARN("found cameras: " << cam);
+      }
+      std::this_thread::sleep_for(chrono::seconds(1));
+    } else {
+      LOG_INFO("found camera with serial number: " << serial_);
+      foundCamera = true;
+      break;
     }
+  }
+  if (!foundCamera) {
+    LOG_ERROR("giving up, camera " << serial_ << " not found!");
     return (false);
   }
   keepRunning_ = true;
