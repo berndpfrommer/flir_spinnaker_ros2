@@ -183,6 +183,16 @@ names the following procedure is recommended for adding new features:
 Once you have modified the config file, now just set the newly created
 parameter in the launch file, done.
 
+## Known issues
+
+1) If you run multiple drivers in separate nodes that all access USB based
+devices, starting a new driver will stop the image acquisition of
+currently running drivers. There is an ugly workaround for this
+currently implemented: if image delivery stops for more than
+``acquisition_timeout`` seconds, the acquisition is restarted. This
+operation may not be thread safe so the driver already running could
+possibly crash. This issue can be avoided by running all drivers in
+the same address space with a composable node.
 
 ## How to contribute
 Please provide feedback if you cannot get your camera working or if

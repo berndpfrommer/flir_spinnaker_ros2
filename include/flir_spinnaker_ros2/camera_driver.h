@@ -89,6 +89,7 @@ private:
   bool dumpNodeMap_{false};
   bool debug_{false};
   bool computeBrightness_{false};
+  double acquisitionTimeout_{3.0};
   uint32_t currentExposureTime_{0};
   float currentGain_{std::numeric_limits<float>::lowest()};
   std::shared_ptr<flir_spinnaker_common::Driver> driver_;

@@ -195,6 +195,8 @@ void CameraDriver::readParameters()
   qosDepth_ = this->declare_parameter<int>("image_queue_size", 4);
   computeBrightness_ =
     this->declare_parameter<bool>("compute_brightness", false);
+  acquisitionTimeout_ =
+    this->declare_parameter<double>("acquisition_timeout", 3.0);
   parameterFile_ =
     this->declare_parameter<std::string>("parameter_file", "parameters.cfg");
   LOG_INFO(" serial: " << serial_);
@@ -598,6 +600,7 @@ bool CameraDriver::start()
   driver_ = std::make_shared<flir_spinnaker_common::Driver>();
   driver_->setDebug(debug_);
   driver_->setComputeBrightness(computeBrightness_);
+  driver_->setAcquisitionTimeout(acquisitionTimeout_);
 
   LOG_INFO("using spinnaker lib version: " + driver_->getLibraryVersion());
   const auto camList = driver_->getSerialNumbers();
