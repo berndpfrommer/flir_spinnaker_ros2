@@ -102,7 +102,8 @@ private:
   bool cameraRunning_{false};
   std::mutex mutex_;
   std::condition_variable cv_;
-  std::deque<ImageConstPtr> imageQueue_;
+  std::deque<ImageConstPtr> bufferQueue_;
+  size_t maxBufferQueueSize_{4};
   std::shared_ptr<std::thread> thread_;
   bool keepRunning_{true};
   std::map<std::string, NodeInfo> parameterMap_;
@@ -111,6 +112,7 @@ private:
     controlSub_;
   uint32_t publishedCount_{0};
   uint32_t droppedCount_{0};
+  uint32_t queuedCount_{0};
   rclcpp::Time lastStatusTime_;
   int qosDepth_{4};
 };

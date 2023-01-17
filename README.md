@@ -7,9 +7,10 @@ NOTE: This driver is not written or supported by FLIR.
 
 ## Tested cameras:
 
-The following cameras have been tested:
+The following cameras have been used with this driver:
 
 - Blackfly S (USB3, GigE)
+- Blackfly (GigE)
 - Grashopper (USB3)
 - Chameleon (USB3) tested on firmware v1.13.3.00
 
@@ -35,7 +36,29 @@ triggering. It's straight forward to support new camera types and features by
 editing the camera definition (.cfg) files. Unless you need new pixel
 formats you may not have to modify any source code. The code is meant
 to be a thin wrapper for setting the features available in FLIR's
-SpinView program.
+SpinView program. The driver has following parameters,
+*in addition to the parameters defined in the .cfg files*:
+
+- ``serial_number``: must have the serial number of the camera. If you
+  don't know it, put in anything you like and
+  the driver will croak with an error message, telling you what
+  cameras serial numbers are available
+- ``frame_id``: the ROS frame id to put in the header of the published
+  image messages.
+- ``camerainfo_url``: where to find the camera calibration yaml file.
+- ``parameter_file``: location of the .cfg file defining the camera
+  (blackfly_s.cfg etc)
+- ``compute_brightness``: if true, compute image brightness and
+  publish it in meta data message. This is useful for external
+  exposure control but incurs extra CPU load. Default: false.
+- ``buffer_queue_size``: max number of images to queue internally
+  before shoving them into the ROS output queue. Decouples the
+  Spinnaker SDK thread from the ROS publishing thread. Default: 4.
+- ``image_queue_size``: ROS output queue size (quality of
+  service). Default: 4
+- ``dump_node_map``: set this to true to get a dump of the node map. This
+  feature is helpful when hacking a new config file. Default: false.
+  
 
 ## How to build
 

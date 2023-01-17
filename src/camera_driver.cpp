@@ -157,20 +157,21 @@ bool CameraDriver::stopCamera()
 void CameraDriver::printStatus()
 {
   if (driver_) {
-    const double dropRate = (publishedCount_ > 0)
+    const double dropRate = (queuedCount_ > 0)
                               ? (static_cast<double>(droppedCount_) /
-                                 static_cast<double>(publishedCount_))
+                                 static_cast<double>(queuedCount_))
                               : 0;
     const rclcpp::Time t = now();
     const rclcpp::Duration dt = t - lastStatusTime_;
     double dtns = std::max(dt.nanoseconds(), (int64_t)1);
     double outRate = publishedCount_ * 1e9 / dtns;
-    LOG_INFO(
-      "frame rate in: " << driver_->getReceiveFrameRate() << " Hz, out:"
-                        << outRate << " Hz, drop: " << dropRate * 100 << "%");
+    RCLCPP_INFO(
+      this->get_logger(), "rate [Hz] in %6.2f out %6.2f drop %3.0f%%",
+      driver_->getReceiveFrameRate(), outRate, dropRate * 100);
     lastStatusTime_ = t;
     droppedCount_ = 0;
     publishedCount_ = 0;
+    queuedCount_ = 0;
   } else {
     LOG_WARN("camera " << serial_ << " is not online!");
   }
@@ -193,6 +194,8 @@ void CameraDriver::readParameters()
   frameId_ = this->declare_parameter<std::string>("frame_id", get_name());
   dumpNodeMap_ = this->declare_parameter<bool>("dump_node_map", false);
   qosDepth_ = this->declare_parameter<int>("image_queue_size", 4);
+  maxBufferQueueSize_ =
+    static_cast<size_t>(this->declare_parameter<int>("buffer_queue_size", 4));
   computeBrightness_ =
     this->declare_parameter<bool>("compute_brightness", false);
   parameterFile_ =
@@ -442,8 +445,9 @@ void CameraDriver::publishImage(const ImageConstPtr & im)
 {
   {
     std::unique_lock<std::mutex> lock(mutex_);
-    if (imageQueue_.size() < 2) {
-      imageQueue_.push_back(im);
+    queuedCount_++;
+    if (bufferQueue_.size() < maxBufferQueueSize_) {
+      bufferQueue_.push_back(im);
       cv_.notify_all();
     } else {
       droppedCount_++;
@@ -460,12 +464,12 @@ void CameraDriver::run()
         std::unique_lock<std::mutex> lock(mutex_);
         // one second timeout
         const std::chrono::microseconds timeout((int64_t)(1000000LL));
-        while (imageQueue_.empty() && keepRunning_ && rclcpp::ok()) {
+        while (bufferQueue_.empty() && keepRunning_ && rclcpp::ok()) {
           cv_.wait_for(lock, timeout);
         }
-        if (!imageQueue_.empty()) {
-          img = imageQueue_.back();
-          imageQueue_.pop_back();
+        if (!bufferQueue_.empty()) {
+          img = bufferQueue_.back();
+          bufferQueue_.pop_back();
         }
       }  // -------- end of locked section
       if (img && keepRunning_ && rclcpp::ok()) {

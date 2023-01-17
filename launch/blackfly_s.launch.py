@@ -31,6 +31,7 @@ camera_params = {
     'frame_rate_auto': 'Off',
     'frame_rate': 20.0,
     'frame_rate_enable': True,
+    'buffer_queue_size': 1,
     'trigger_mode': 'Off',
     'chunk_mode_active': True,
     'chunk_selector_frame_id': 'FrameID',
