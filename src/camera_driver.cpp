@@ -505,7 +505,7 @@ static std::string flir_to_ros_encoding(
 void CameraDriver::doPublish(const ImageConstPtr & im)
 {
   // todo: honor the encoding in the image
-  const auto t = now();
+  const auto t = rclcpp::Time(im->time_);
   imageMsg_.header.stamp = t;
   cameraInfoMsg_.header.stamp = t;
 
