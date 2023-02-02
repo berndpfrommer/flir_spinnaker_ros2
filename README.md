@@ -155,13 +155,34 @@ time stamp syncing) and
 
 ### Time stamps
 
+By default the driver will set the ROS header time stamp to be the
+time when the image was delivered by the SDK. Such time stamps are not
+very precise and may lag depending on host CPU load. However the
+driver has a feature to use the much more accurate sensor-provided
+camera time stamps. These are then converted to ROS time stamps by
+estimating the offset between ROS and sensor time stamps via a simple
+moving average. For the adjustment to work
+*the camera must be configured to send time stamps*, and the
+``adjust_timestamp`` flag must be set to true, and the relevant field
+in the "chunk" must be populated by the camera. For the Blackfly S
+the parameters look like this:
+
+```
+    'adjust_timestamp': True,
+    'chunk_mode_active': True,
+    'chunk_selector_timestamp': 'Timestamp',
+    'chunk_enable_timestamp': True,
+```
+
 When running hardware synchronized cameras in a stereo configuration
 two drivers will need to be run, one for each camera. This will mean
 however that their published ROS header time stamps are *not*
 identical which in turn may prevent down-stream ROS nodes from recognizing the
 images as being hardware synchronized. You can use the
 [cam_sync_ros2 node](https://github.com/berndpfrommer/cam_sync_ros2)
-to force the time stamps to be aligned.
+to force the time stamps to be aligned. In this scenario it is
+mandatory to configure the driver to adjust the ROS time stamps as
+described above.
 
 
 ### Automatic exposure

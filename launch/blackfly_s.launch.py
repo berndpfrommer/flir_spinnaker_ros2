@@ -24,6 +24,7 @@ from ament_index_python.packages import get_package_share_directory
 camera_params = {
     'debug': False,
     'compute_brightness': False,
+    'adjust_timestamp': True,
     'dump_node_map': False,
     # set parameters defined in blackfly_s.cfg
     'gain_auto': 'Continuous',

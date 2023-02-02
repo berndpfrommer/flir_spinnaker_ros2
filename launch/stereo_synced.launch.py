@@ -26,6 +26,7 @@ camera_params = {
     'debug': False,
     'compute_brightness': True,
     'dump_node_map': False,
+    'adjust_timestamp': True,
     'gain_auto': 'Off',
     'gain': 0,
     'exposure_auto': 'Off',

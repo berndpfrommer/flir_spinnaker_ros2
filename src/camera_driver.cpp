@@ -16,6 +16,7 @@
 #include <flir_spinnaker_ros2/camera_driver.h>
 
 #include <chrono>
+#include <cmath>
 #include <fstream>
 #include <functional>
 #include <image_transport/image_transport.hpp>
@@ -191,7 +192,10 @@ void CameraDriver::readParameters()
     LOG_WARN("bad debug param type: " << e.what());
     debug_ = false;
   }
-  LOG_INFO("debug: " << debug_);
+  // Flag to adjust ROS time stamps
+  adjustTimeStamp_ = this->declare_parameter<bool>("adjust_timestamp", false);
+  LOG_INFO((adjustTimeStamp_ ? "" : "not ") << "adjusting time stamps!");
+
   cameraInfoURL_ = this->declare_parameter<std::string>("camerainfo_url", "");
   frameId_ = this->declare_parameter<std::string>("frame_id", get_name());
   dumpNodeMap_ = this->declare_parameter<bool>("dump_node_map", false);
@@ -204,7 +208,7 @@ void CameraDriver::readParameters()
     this->declare_parameter<double>("acquisition_timeout", 3.0);
   parameterFile_ =
     this->declare_parameter<std::string>("parameter_file", "parameters.cfg");
-  LOG_INFO(" serial: " << serial_);
+  LOG_INFO("looking for serial number: " << serial_);
   callbackHandle_ = this->add_on_set_parameters_callback(
     std::bind(&CameraDriver::parameterChanged, this, std::placeholders::_1));
 }
@@ -502,10 +506,34 @@ static std::string flir_to_ros_encoding(
   }
 }
 
+// adjust ROS header stamp using camera provided meta data
+rclcpp::Time CameraDriver::getAdjustedTimeStamp(uint64_t t, int64_t sensorTime)
+{
+  if (std::isnan(averageTimeDifference_)) {
+    // capture the coarse offset between sensor and ROS time
+    // at the very first time stamp.
+    baseTimeOffset_ = static_cast<int64_t>(t) - sensorTime;
+    averageTimeDifference_ = 0;
+  }
+  const double dt =
+    (static_cast<int64_t>(t) - baseTimeOffset_ - sensorTime) * 1e-9;
+
+  // compute exponential moving average
+  constexpr double alpha = 0.01;  // average over rougly 100 samples
+  averageTimeDifference_ = averageTimeDifference_ * (1.0 - alpha) + alpha * dt;
+
+  // adjust sensor time by average difference to ROS time
+  const rclcpp::Time adjustedTime =
+    rclcpp::Time(sensorTime + baseTimeOffset_, RCL_SYSTEM_TIME) +
+    rclcpp::Duration::from_seconds(averageTimeDifference_);
+  return (adjustedTime);
+}
+
 void CameraDriver::doPublish(const ImageConstPtr & im)
 {
-  // todo: honor the encoding in the image
-  const auto t = rclcpp::Time(im->time_);
+  const auto t = adjustTimeStamp_
+                   ? getAdjustedTimeStamp(im->time_, im->imageTime_)
+                   : rclcpp::Time(im->time_);
   imageMsg_.header.stamp = t;
   cameraInfoMsg_.header.stamp = t;
 
