@@ -539,7 +539,7 @@ void CameraDriver::doPublish(const ImageConstPtr & im)
 
   const std::string encoding = flir_to_ros_encoding(im->pixelFormat_);
 
-  if (count_subscribers(pub_.getTopic()) > 0) {
+  if (pub_.getNumSubscribers() > 0) {
     sensor_msgs::msg::CameraInfo::UniquePtr cinfo(
       new sensor_msgs::msg::CameraInfo(cameraInfoMsg_));
     // will make deep copy. Do we need to? Probably...
