@@ -24,6 +24,7 @@
 #include <deque>
 #include <image_meta_msgs_ros2/msg/image_meta_data.hpp>
 #include <image_transport/image_transport.hpp>
+#include <limits>
 #include <map>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -65,6 +66,7 @@ private:
   bool setInt(const std::string & nodeName, int v);
   bool setBool(const std::string & nodeName, bool v);
   bool readParameterFile();
+  rclcpp::Time getAdjustedTimeStamp(uint64_t t, int64_t sensorTime);
 
   void run();  // thread
 
@@ -90,7 +92,10 @@ private:
   bool debug_{false};
   bool computeBrightness_{false};
   double acquisitionTimeout_{3.0};
+  bool adjustTimeStamp_{false};
   uint32_t currentExposureTime_{0};
+  double averageTimeDifference_{std::numeric_limits<double>::quiet_NaN()};
+  int64_t baseTimeOffset_{0};
   float currentGain_{std::numeric_limits<float>::lowest()};
   std::shared_ptr<flir_spinnaker_common::Driver> driver_;
   std::shared_ptr<camera_info_manager::CameraInfoManager> infoManager_;
