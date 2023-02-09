@@ -487,23 +487,45 @@ void CameraDriver::run()
   }
 }
 
-static std::string flir_to_ros_encoding(
-  const flir_spinnaker_common::pixel_format::PixelFormat & pf)
+using flir_fmt = flir_spinnaker_common::pixel_format::PixelFormat;
+namespace ros_fmt = sensor_msgs::image_encodings;
+
+static const std::unordered_map<flir_fmt, std::string> flir_2_ros{
+  {{flir_fmt::INVALID, "INV"},
+   {flir_fmt::Mono8, ros_fmt::MONO8},
+   {flir_fmt::Mono10p, "INV"},
+   {flir_fmt::Mono10Packed, "INV"},
+   {flir_fmt::Mono12p, "INV"},
+   {flir_fmt::Mono12Packed, "INV"},
+   {flir_fmt::Mono16, ros_fmt::MONO16},
+   {flir_fmt::BayerRG8, ros_fmt::BAYER_RGGB8},
+   {flir_fmt::BayerRG10p, "INV"},
+   {flir_fmt::BayerRG10Packed, "INV"},
+   {flir_fmt::BayerRG12p, "INV"},
+   {flir_fmt::BayerRG12Packed, "INV"},
+   {flir_fmt::BayerRG16, ros_fmt::BAYER_RGGB16},
+   {flir_fmt::BayerGR8, ros_fmt::BAYER_GRBG8},
+   {flir_fmt::BayerGR16, ros_fmt::BAYER_GRBG16},
+   {flir_fmt::BayerGB8, ros_fmt::BAYER_GBRG8},
+   {flir_fmt::BayerGB16, ros_fmt::BAYER_GBRG16},
+   {flir_fmt::BayerBG8, ros_fmt::BAYER_BGGR8},
+   {flir_fmt::BayerBG16, ros_fmt::BAYER_BGGR16},
+   {flir_fmt::YUV411Packed, "INV"},
+   {flir_fmt::YUV422Packed, "INV"},
+   {flir_fmt::YUV444Packed, "INV"},
+   {flir_fmt::YCbCr8, "INV"},
+   {flir_fmt::YCbCr422_8, "INV"},
+   {flir_fmt::YCbCr411_8, "INV"},
+   {flir_fmt::RGB8Packed, ros_fmt::RGB8},
+   {flir_fmt::BGR8, ros_fmt::BGR8},
+   {flir_fmt::BGRa8, ros_fmt::BGRA8}}};
+
+static std::string flir_to_ros_encoding(const flir_fmt & pf, bool * canEncode)
 {
-  switch (pf) {
-    case flir_spinnaker_common::pixel_format::BayerRG8:
-      return (sensor_msgs::image_encodings::BAYER_RGGB8);
-      break;
-    case flir_spinnaker_common::pixel_format::RGB8:
-      return (sensor_msgs::image_encodings::RGB8);
-      break;
-    case flir_spinnaker_common::pixel_format::Mono8:
-      return (sensor_msgs::image_encodings::MONO8);
-      break;
-    case flir_spinnaker_common::pixel_format::INVALID:
-    default:
-      return ("INVALID");
-  }
+  auto it = flir_2_ros.find(pf);
+  *canEncode = (it != flir_2_ros.end() && it->second != "INV") &&
+               (pf != flir_fmt::INVALID);
+  return (*canEncode ? it->second : "INV");
 }
 
 // adjust ROS header stamp using camera provided meta data
@@ -537,7 +559,16 @@ void CameraDriver::doPublish(const ImageConstPtr & im)
   imageMsg_.header.stamp = t;
   cameraInfoMsg_.header.stamp = t;
 
-  const std::string encoding = flir_to_ros_encoding(im->pixelFormat_);
+  bool canEncode{false};
+  const std::string encoding =
+    flir_to_ros_encoding(im->pixelFormat_, &canEncode);
+  if (!canEncode) {
+    RCLCPP_WARN_STREAM(
+      get_logger(),
+      "no ROS encoding for pixel format "
+        << flir_spinnaker_common::pixel_format::to_string(im->pixelFormat_));
+    return;
+  }
 
   if (pub_.getNumSubscribers() > 0) {
     sensor_msgs::msg::CameraInfo::UniquePtr cinfo(
