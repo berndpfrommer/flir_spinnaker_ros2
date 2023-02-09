@@ -28,6 +28,7 @@ camera_params = {
     'dump_node_map': False,
     # set parameters defined in blackfly_s.cfg
     'gain_auto': 'Continuous',
+    # 'pixel_format': 'BayerRG8',
     'exposure_auto': 'Continuous',
     # 'device_link_throughput_limit': 380000000,
     'frame_rate_auto': 'Off',
