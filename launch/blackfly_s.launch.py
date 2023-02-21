@@ -31,6 +31,11 @@ camera_params = {
     # 'pixel_format': 'BayerRG8',
     'exposure_auto': 'Continuous',
     # 'device_link_throughput_limit': 380000000,
+    # ---- to reduce the sensor width and shift the crop
+    # 'image_width': 1408,
+    # 'image_height': 1080,
+    # 'offset_x': 16,
+    # 'offset_y': 0,
     'frame_rate_auto': 'Off',
     'frame_rate': 20.0,
     'frame_rate_enable': True,
@@ -63,7 +68,6 @@ def generate_launch_description():
                 name=[LaunchConfig('camera_name')],
                 parameters=[camera_params,
                             {'parameter_file': config_dir + 'blackfly_s.cfg',
-                             # 'dump_node_map': True,
                              'serial_number': [LaunchConfig('serial')]}],
                 remappings=[('~/control', '/exposure_control/control'), ])
 
