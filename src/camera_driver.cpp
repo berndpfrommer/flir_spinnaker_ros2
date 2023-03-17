@@ -516,6 +516,7 @@ static const std::unordered_map<flir_fmt, std::string> flir_2_ros{
    {flir_fmt::YCbCr8, "INV"},
    {flir_fmt::YCbCr422_8, "INV"},
    {flir_fmt::YCbCr411_8, "INV"},
+   {flir_fmt::RGB8, ros_fmt::RGB8},
    {flir_fmt::RGB8Packed, ros_fmt::RGB8},
    {flir_fmt::BGR8, ros_fmt::BGR8},
    {flir_fmt::BGRa8, ros_fmt::BGRA8}}};
