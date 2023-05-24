@@ -27,7 +27,9 @@ Software:
   what the continuous integration builds are using)
 
 The code compiles under Ubuntu 22.04 / Humble but has not been tested
-yet with real hardware.
+thoroughly with real hardware. Currently known to work with Blackfly S (USB3)
+using Spinnaker 2.6.0.157.
+
 
 ## Features
 
