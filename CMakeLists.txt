@@ -41,6 +41,8 @@ foreach(pkg ${ROS2_DEPENDENCIES})
   find_package(${pkg} REQUIRED)
 endforeach()
 
+ament_environment_hooks(findshared.sh.in)
+
 ament_auto_find_build_dependencies(REQUIRED ${ROS2_DEPENDENCIES})
 
 ament_auto_add_library(camera_driver SHARED
