@@ -1,5 +1,5 @@
 // -*-c++-*--------------------------------------------------------------------
-// Copyright 2020 Bernd Pfrommer <bernd.pfrommer@gmail.com>
+// Copyright 2023 Bernd Pfrommer <bernd.pfrommer@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -128,14 +128,14 @@ CameraDriver::CameraDriver(const rclcpp::NodeOptions & options)
 CameraDriver::~CameraDriver()
 {
   stop();
-  driver_.reset();  // invoke destructor
+  wrapper_.reset();  // invoke destructor
 }
 
 bool CameraDriver::stop()
 {
   stopCamera();
-  if (driver_) {
-    driver_->deInitCamera();
+  if (wrapper_) {
+    wrapper_->deInitCamera();
   }
   if (!statusTimer_->is_canceled()) {
     statusTimer_->cancel();
@@ -150,16 +150,16 @@ bool CameraDriver::stop()
 
 bool CameraDriver::stopCamera()
 {
-  if (cameraRunning_ && driver_) {
+  if (cameraRunning_ && wrapper_) {
     cameraRunning_ = false;
-    return driver_->stopCamera();
+    return wrapper_->stopCamera();
   }
   return false;
 }
 
 void CameraDriver::printStatus()
 {
-  if (driver_) {
+  if (wrapper_) {
     const double dropRate = (queuedCount_ > 0)
                               ? (static_cast<double>(droppedCount_) /
                                  static_cast<double>(queuedCount_))
@@ -170,7 +170,7 @@ void CameraDriver::printStatus()
     double outRate = publishedCount_ * 1e9 / dtns;
     RCLCPP_INFO(
       this->get_logger(), "rate [Hz] in %6.2f out %6.2f drop %3.0f%%",
-      driver_->getReceiveFrameRate(), outRate, dropRate * 100);
+      wrapper_->getReceiveFrameRate(), outRate, dropRate * 100);
     lastStatusTime_ = t;
     droppedCount_ = 0;
     publishedCount_ = 0;
@@ -267,7 +267,7 @@ bool CameraDriver::setEnum(const std::string & nodeName, const std::string & v)
 {
   LOG_INFO("setting " << nodeName << " to: " << v);
   std::string retV;  // what actually was set
-  std::string msg = driver_->setEnum(nodeName, v, &retV);
+  std::string msg = wrapper_->setEnum(nodeName, v, &retV);
   bool status(true);
   if (msg != "OK") {
     LOG_WARN("setting " << nodeName << " failed: " << msg);
@@ -284,7 +284,7 @@ bool CameraDriver::setDouble(const std::string & nodeName, double v)
 {
   LOG_INFO("setting " << nodeName << " to: " << v);
   double retV;  // what actually was set
-  std::string msg = driver_->setDouble(nodeName, v, &retV);
+  std::string msg = wrapper_->setDouble(nodeName, v, &retV);
   bool status(true);
   if (msg != "OK") {
     LOG_WARN("setting " << nodeName << " failed: " << msg);
@@ -301,7 +301,7 @@ bool CameraDriver::setInt(const std::string & nodeName, int v)
 {
   LOG_INFO("setting " << nodeName << " to: " << v);
   int retV;  // what actually was set
-  std::string msg = driver_->setInt(nodeName, v, &retV);
+  std::string msg = wrapper_->setInt(nodeName, v, &retV);
   bool status(true);
   if (msg != "OK") {
     LOG_WARN("setting " << nodeName << " failed: " << msg);
@@ -318,7 +318,7 @@ bool CameraDriver::setBool(const std::string & nodeName, bool v)
 {
   LOG_INFO("setting " << nodeName << " to: " << v);
   bool retV;  // what actually was set
-  std::string msg = driver_->setBool(nodeName, v, &retV);
+  std::string msg = wrapper_->setBool(nodeName, v, &retV);
   bool status(true);
   if (msg != "OK") {
     LOG_WARN("setting " << nodeName << " failed: " << msg);
@@ -382,7 +382,7 @@ rcl_interfaces::msg::SetParametersResult CameraDriver::parameterChanged(
     if (it == parameterMap_.end()) {
       continue;  // ignore unknown param
     }
-    if (!driver_) {
+    if (!wrapper_) {
       LOG_WARN("got parameter update while driver is not ready!");
       continue;
     }
@@ -392,7 +392,7 @@ rcl_interfaces::msg::SetParametersResult CameraDriver::parameterChanged(
     }
     try {
       setParameter(ni, p);
-    } catch (const flir_spinnaker_common::Driver::DriverException & e) {
+    } catch (const flir_spinnaker_ros2::SpinnakerWrapper::Exception & e) {
       LOG_WARN("param " << p.get_name() << " " << e.what());
     }
   }
@@ -403,7 +403,7 @@ rcl_interfaces::msg::SetParametersResult CameraDriver::parameterChanged(
 }
 
 void CameraDriver::controlCallback(
-  const camera_control_msgs_ros2::msg::CameraControl::UniquePtr msg)
+  const flir_spinnaker_control_msgs::msg::CameraControl::UniquePtr msg)
 {
   /*
   LOG_INFO(
@@ -437,7 +437,7 @@ void CameraDriver::controlCallback(
         LOG_WARN("no node name defined for exposure_time, check .cfg file!");
       }
     }
-  } catch (const flir_spinnaker_common::Driver::DriverException & e) {
+  } catch (const flir_spinnaker_ros2::SpinnakerWrapper::Exception & e) {
     LOG_WARN("failed to control: " << e.what());
   }
 
@@ -487,7 +487,7 @@ void CameraDriver::run()
   }
 }
 
-using flir_fmt = flir_spinnaker_common::pixel_format::PixelFormat;
+using flir_fmt = flir_spinnaker_ros2::pixel_format::PixelFormat;
 namespace ros_fmt = sensor_msgs::image_encodings;
 
 static const std::unordered_map<flir_fmt, std::string> flir_2_ros{
@@ -567,7 +567,7 @@ void CameraDriver::doPublish(const ImageConstPtr & im)
     RCLCPP_WARN_STREAM(
       get_logger(),
       "no ROS encoding for pixel format "
-        << flir_spinnaker_common::pixel_format::to_string(im->pixelFormat_));
+        << flir_spinnaker_ros2::pixel_format::to_string(im->pixelFormat_));
     return;
   }
 
@@ -603,16 +603,16 @@ void CameraDriver::doPublish(const ImageConstPtr & im)
 void CameraDriver::printCameraInfo()
 {
   if (cameraRunning_) {
-    LOG_INFO("camera has pixel format: " << driver_->getPixelFormat());
+    LOG_INFO("camera has pixel format: " << wrapper_->getPixelFormat());
   }
 }
 
 void CameraDriver::startCamera()
 {
   if (!cameraRunning_) {
-    flir_spinnaker_common::Driver::Callback cb =
+    flir_spinnaker_ros2::SpinnakerWrapper::Callback cb =
       std::bind(&CameraDriver::publishImage, this, std::placeholders::_1);
-    cameraRunning_ = driver_->startCamera(cb);
+    cameraRunning_ = wrapper_->startCamera(cb);
     if (!cameraRunning_) {
       LOG_ERROR("failed to start camera!");
     } else {
@@ -630,11 +630,11 @@ bool CameraDriver::start()
   infoManager_ = std::make_shared<camera_info_manager::CameraInfoManager>(
     this, get_name(), cameraInfoURL_);
   controlSub_ =
-    this->create_subscription<camera_control_msgs_ros2::msg::CameraControl>(
+    this->create_subscription<flir_spinnaker_control_msgs::msg::CameraControl>(
       "~/control", 10,
       std::bind(&CameraDriver::controlCallback, this, std::placeholders::_1));
   metaPub_ =
-    create_publisher<image_meta_msgs_ros2::msg::ImageMetaData>("~/meta", 1);
+    create_publisher<flir_spinnaker_meta_msgs::msg::ImageMetaData>("~/meta", 1);
 
   cameraInfoMsg_ = infoManager_->getCameraInfo();
   imageMsg_.header.frame_id = frameId_;
@@ -662,16 +662,16 @@ bool CameraDriver::start()
   qosProf.liveliness_lease_duration.nsec = 0;
 
   pub_ = image_transport::create_camera_publisher(this, "~/image_raw", qosProf);
-  driver_ = std::make_shared<flir_spinnaker_common::Driver>();
-  driver_->setDebug(debug_);
-  driver_->setComputeBrightness(computeBrightness_);
-  driver_->setAcquisitionTimeout(acquisitionTimeout_);
+  wrapper_ = std::make_shared<flir_spinnaker_ros2::SpinnakerWrapper>();
+  wrapper_->setDebug(debug_);
+  wrapper_->setComputeBrightness(computeBrightness_);
+  wrapper_->setAcquisitionTimeout(acquisitionTimeout_);
 
-  LOG_INFO("using spinnaker lib version: " + driver_->getLibraryVersion());
+  LOG_INFO("using spinnaker lib version: " + wrapper_->getLibraryVersion());
   bool foundCamera = false;
   for (int retry = 1; retry < 6; retry++) {
-    driver_->refreshCameraList();
-    const auto camList = driver_->getSerialNumbers();
+    wrapper_->refreshCameraList();
+    const auto camList = wrapper_->getSerialNumbers();
     if (std::find(camList.begin(), camList.end(), serial_) == camList.end()) {
       LOG_WARN(
         "no camera found with serial: " << serial_ << " on try # " << retry);
@@ -692,10 +692,10 @@ bool CameraDriver::start()
   keepRunning_ = true;
   thread_ = std::make_shared<std::thread>(&CameraDriver::run, this);
 
-  if (driver_->initCamera(serial_)) {
+  if (wrapper_->initCamera(serial_)) {
     if (dumpNodeMap_) {
       LOG_INFO("dumping node map!");
-      std::string nm = driver_->getNodeMapAsString();
+      std::string nm = wrapper_->getNodeMapAsString();
       std::cout << nm;
     }
     // Must first create the camera parameters before acquisition is started.

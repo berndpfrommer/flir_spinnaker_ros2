@@ -16,9 +16,8 @@
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>camera_info_manager</depend>
-  <depend>flir_spinnaker_common</depend>
-  <depend>image_meta_msgs_ros2</depend>
-  <depend>camera_control_msgs_ros2</depend>
+  <depend>flir_spinnaker_meta_msgs</depend>
+  <depend>flir_spinnaker_control_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

@@ -197,9 +197,9 @@ camera runs its own auto exposure. The
 [exposure_control_ros2](https://github.com/berndpfrommer/exposure_control_ros2)
 package can provide external automatic exposure control. To this end
 the driver publishes
-[meta data messages](https://github.com/berndpfrommer/image_meta_msgs_ros2) and
+[meta data messages](https://github.com/berndpfrommer/flir_spinnaker_meta_msgs) and
 subscribes to 
-[camera control messages](https://github.com/berndpfrommer/camera_control_msgs_ros2).
+[camera control messages](https://github.com/berndpfrommer/flir_spinnaker_control_msgs).
 
 ## How to add new features
 

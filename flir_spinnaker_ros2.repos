@@ -1,0 +1,9 @@
+repositories:
+  flir_spinnaker_meta_msgs:
+    type: git
+    url: https://github.com/berndpfrommer/flir_spinnaker_meta_msgs.git
+    version: master
+  flir_spinnaker_control_msgs:
+    type: git
+    url: https://github.com/berndpfrommer/flir_spinnaker_control_msgs.git
+    version: master

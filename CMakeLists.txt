@@ -18,6 +18,33 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 
+# the spinnaker SDK does not provide a cmake file
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
+# If Spinnacker is already present, use the found version. If not, download it.
+# We can't resolve this dependency using the usual rosdep means because
+# the Point Grey EULA prohibits redistributing the headers or the packages which
+# contains them. We work around this by downloading the archive directly from
+# their website during this step in the build process.
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+find_package(SPINNAKER QUIET)
+message(STATUS "Found variable: ${SPINNAKER_FOUND} at ${SPINNAKER_LIBRARIES} and ${SPINNAKER_INCLUDE_DIRS}")
+
+if(NOT SPINNAKER_FOUND)
+  message(STATUS "spinnaker not found")
+  message(STATUS "libSpinnaker not found in system library path")
+  include(cmake/DownloadSpinnaker.cmake)
+  download_spinnaker(SPINNAKER_LIBRARIES SPINNAKER_INCLUDE_DIRS)
+endif()
+
+message(STATUS "libSpinnaker library location: ${SPINNAKER_LIBRARIES}")
+message(STATUS "libSpinnaker include location: ${SPINNAKER_INCLUDE_DIRS}")
+
+find_package(SPINNAKER REQUIRED)
+
+include_directories(SYSTEM
+  ${SPINNAKER_INCLUDE_DIRS})
+
 # list of all packages that use ament for export (may work for others too)
 
 set(ROS2_DEPENDENCIES
@@ -27,9 +54,8 @@ set(ROS2_DEPENDENCIES
   "std_msgs"
   "camera_info_manager"
   "image_transport"
-  "flir_spinnaker_common"
-  "image_meta_msgs_ros2"
-  "camera_control_msgs_ros2"
+  "flir_spinnaker_meta_msgs"
+  "flir_spinnaker_control_msgs"
 )
 
 # find dependencies
@@ -41,14 +67,33 @@ foreach(pkg ${ROS2_DEPENDENCIES})
   find_package(${pkg} REQUIRED)
 endforeach()
 
-ament_auto_find_build_dependencies(REQUIRED ${ROS2_DEPENDENCIES})
+# ament_auto_find_build_dependencies(REQUIRED ${ROS2_DEPENDENCIES})
 
-ament_auto_add_library(camera_driver SHARED
+add_library(camera_driver SHARED
   src/camera_driver.cpp
+  src/spinnaker_wrapper.cpp
+  src/spinnaker_wrapper_impl.cpp
+  src/image.cpp
+  src/pixel_format.cpp
+  src/genicam_utils.cpp
 )
 
-ament_auto_add_executable(camera_driver_node
-  src/camera_driver_node.cpp
+ament_target_dependencies(camera_driver PUBLIC ${ROS2_DEPENDENCIES})
+target_link_libraries(camera_driver PUBLIC Spinnaker::Spinnaker)
+
+target_include_directories(camera_driver
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
+add_executable(camera_driver_node
+  src/camera_driver_node.cpp)
+
+target_link_libraries(camera_driver_node camera_driver)
+
+target_include_directories(camera_driver_node
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
 )
 
 rclcpp_components_register_nodes(camera_driver "flir_spinnaker_ros2::CameraDriver")
@@ -91,7 +136,9 @@ if(BUILD_TESTING)
   find_package(ament_cmake_clang_format REQUIRED)
   find_package(ament_cmake_xmllint REQUIRED)
 
-  ament_copyright()
+  #set(AMENT_LINT_AUTO_FILE_EXCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/TargetArch.cmake)
+  #set(AMENT_LINT_AUTO_FILE_EXCLUDE cmake/TargetArch.cmake)
+  ament_copyright(EXCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/TargetArch.cmake)
   ament_cppcheck(LANGUAGE c++)
   ament_cpplint(FILTERS "-build/include,-runtime/indentation_namespace")
   ament_flake8()

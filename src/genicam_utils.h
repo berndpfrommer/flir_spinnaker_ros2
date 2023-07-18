@@ -1,5 +1,5 @@
 // -*-c++-*--------------------------------------------------------------------
-// Copyright 2020 Bernd Pfrommer <bernd.pfrommer@gmail.com>
+// Copyright 2023 Bernd Pfrommer <bernd.pfrommer@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,25 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#ifndef GENICAM_UTILS_H_
+#define GENICAM_UTILS_H_
+
+#include <SpinGenApi/SpinnakerGenApi.h>
+#include <Spinnaker.h>
+
+#include <sstream>
 #include <string>
-#ifndef FLIR_SPINNAKER_ROS2__CAMERA_H_
-#define FLIR_SPINNAKER_ROS2__CAMERA_H_
 
 namespace flir_spinnaker_ros2
 {
-class Camera
+namespace genicam_utils
 {
-public:
-  explicit Camera(const std::string & serial);
-
-private:
-  std::string void readParameters();
-  // ----- variables --
-  std::shared_ptr<rclcpp::Node> node_;
-  image_transport::CameraPublisher pub_;
-  std::shared_ptr<flir_spinnaker_ros2::SpinnakerWrapper> wrapper_;
-  std::shared_ptr<camera_info_manager::CameraInfoManager> infoManager_;
-};
+void get_nodemap_as_string(std::stringstream & ss, Spinnaker::CameraPtr cam);
+Spinnaker::GenApi::CNodePtr find_node(
+  const std::string & path, Spinnaker::CameraPtr cam, bool debug);
+}  // namespace genicam_utils
 }  // namespace flir_spinnaker_ros2
-
-#endif  // FLIR_SPINNAKER_ROS2__CAMERA_H_
+#endif  // GENICAM_UTILS_H_

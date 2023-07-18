@@ -16,13 +16,13 @@
 #ifndef FLIR_SPINNAKER_ROS2__CAMERA_DRIVER_H_
 #define FLIR_SPINNAKER_ROS2__CAMERA_DRIVER_H_
 
-#include <flir_spinnaker_common/driver.h>
-#include <flir_spinnaker_common/image.h>
+#include <flir_spinnaker_ros2/image.h>
+#include <flir_spinnaker_ros2/spinnaker_wrapper.h>
 
-#include <camera_control_msgs_ros2/msg/camera_control.hpp>
 #include <camera_info_manager/camera_info_manager.hpp>
 #include <deque>
-#include <image_meta_msgs_ros2/msg/image_meta_data.hpp>
+#include <flir_spinnaker_control_msgs/msg/camera_control.hpp>
+#include <flir_spinnaker_meta_msgs/msg/image_meta_data.hpp>
 #include <image_transport/image_transport.hpp>
 #include <limits>
 #include <map>
@@ -38,7 +38,7 @@ namespace flir_spinnaker_ros2
 class CameraDriver : public rclcpp::Node
 {
 public:
-  typedef flir_spinnaker_common::ImageConstPtr ImageConstPtr;
+  typedef flir_spinnaker_ros2::ImageConstPtr ImageConstPtr;
   explicit CameraDriver(const rclcpp::NodeOptions & options);
   ~CameraDriver();
 
@@ -73,13 +73,13 @@ private:
   rcl_interfaces::msg::SetParametersResult parameterChanged(
     const std::vector<rclcpp::Parameter> & params);
   void controlCallback(
-    const camera_control_msgs_ros2::msg::CameraControl::UniquePtr msg);
+    const flir_spinnaker_control_msgs::msg::CameraControl::UniquePtr msg);
   void printStatus();
   void doPublish(const ImageConstPtr & im);
   // ----- variables --
   std::shared_ptr<rclcpp::Node> node_;
   image_transport::CameraPublisher pub_;
-  rclcpp::Publisher<image_meta_msgs_ros2::msg::ImageMetaData>::SharedPtr
+  rclcpp::Publisher<flir_spinnaker_meta_msgs::msg::ImageMetaData>::SharedPtr
     metaPub_;
   std::string serial_;
   std::string cameraInfoURL_;
@@ -97,11 +97,11 @@ private:
   double averageTimeDifference_{std::numeric_limits<double>::quiet_NaN()};
   int64_t baseTimeOffset_{0};
   float currentGain_{std::numeric_limits<float>::lowest()};
-  std::shared_ptr<flir_spinnaker_common::Driver> driver_;
+  std::shared_ptr<flir_spinnaker_ros2::SpinnakerWrapper> wrapper_;
   std::shared_ptr<camera_info_manager::CameraInfoManager> infoManager_;
   sensor_msgs::msg::Image imageMsg_;
   sensor_msgs::msg::CameraInfo cameraInfoMsg_;
-  image_meta_msgs_ros2::msg::ImageMetaData metaMsg_;
+  flir_spinnaker_meta_msgs::msg::ImageMetaData metaMsg_;
   rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr
     callbackHandle_;  // keep alive callbacks
   rclcpp::TimerBase::SharedPtr statusTimer_;
@@ -114,8 +114,8 @@ private:
   bool keepRunning_{true};
   std::map<std::string, NodeInfo> parameterMap_;
   std::vector<std::string> parameterList_;  // remember original ordering
-  rclcpp::Subscription<camera_control_msgs_ros2::msg::CameraControl>::SharedPtr
-    controlSub_;
+  rclcpp::Subscription<
+    flir_spinnaker_control_msgs::msg::CameraControl>::SharedPtr controlSub_;
   uint32_t publishedCount_{0};
   uint32_t droppedCount_{0};
   uint32_t queuedCount_{0};
